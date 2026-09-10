@@ -1,16 +1,17 @@
-<<<<<<< HEAD
 # 😺 Siya - Your FREE AI Cat Assistant
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0-blue)
+![Version](https://img.shields.io/badge/version-2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.8+-yellow)
 ![Status](https://img.shields.io/badge/status-active-success)
 
 **A beautiful, interactive AI assistant with a playful cat personality - 100% FREE!**
 
-[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [FAQ](#-faq)
+🎨 **Now with Animated Cat Image Interface!** 🐱
+
+[Features](#-features) • [Quick Start](#-quick-start) • [Versions](#-four-versions-available) • [Installation](#-installation) • [Documentation](#-documentation)
 
 </div>
 
@@ -20,49 +21,138 @@
 
 ### 💬 **Smart AI Conversations**
 - Powered by **FREE** AI engines (Ollama or Groq)
+- Also supports OpenAI (paid)
 - Natural, friendly, and helpful responses
 - Cat-themed personality 🐱
 
-### 😺 **Animated Emoji Cat**
-- **9 different expressions** that react to your interactions
-- **120pt emoji** - huge and adorable!
-- Real-time mood changes based on activity
+### 🎨 **Beautiful Interfaces**
+- **🆕 Image Version** - Animated cat image with 6 reactive animations
+- **Emoji Version** - 9 different emoji expressions (120pt)
+- **ASCII Version** - Classic ASCII art cat
+- Modern dark theme UI
+- Smooth transitions
 
 ### ✅ **Task Management**
 - Add tasks via text commands
 - Visual task list with one-click completion
 - Automatic saving between sessions
-
-### 🎨 **Beautiful Modern UI**
-- Dark theme design (easy on the eyes)
-- Tabbed interface (Chat, Tasks, Settings)
-- Smooth animations and transitions
-- Professional appearance
+- Never forget anything!
 
 ### 🆓 **100% FREE Forever**
-- **No API costs** - zero subscription fees
-- **Two free options**: Ollama (local) or Groq (cloud)
-- **Unlimited usage** with Ollama
-- **14,400 requests/day** with Groq (more than enough!)
+- **No API costs** with Ollama (local AI)
+- **Free cloud option** with Groq (14,400 requests/day)
+- **Optional paid** OpenAI support
+- **Your choice** - privacy or convenience
+
+### 🔒 **User-Friendly & Secure**
+- Interactive setup wizards
+- User-defined API keys (no hardcoding)
+- Settings management through UI
+- Safe to share on GitHub
 
 ---
 
-## 📋 Table of Contents
+## 🎯 Four Versions Available
 
-- [Features](#-features)
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [AI Engine Options](#-ai-engine-options)
-  - [Option 1: Ollama (Recommended)](#option-1-ollama-recommended)
-  - [Option 2: Groq API](#option-2-groq-api)
-- [Usage Guide](#-usage-guide)
-- [Emoji Cat Guide](#-emoji-cat-guide)
-- [Task Management](#-task-management)
-- [Settings](#️-settings)
-- [Troubleshooting](#-troubleshooting)
-- [FAQ](#-faq)
-- [Contributing](#-contributing)
-- [License](#-license)
+### 1. 🎨 **Siya Image** (NEW! Recommended for Best Visuals)
+- **File:** `siya_image.py`
+- **Cost:** $0 forever
+- **Interface:** Animated cat image with 6 reactive animations
+- **Features:** Text chat, tasks, settings, FREE AI
+- **Setup:** Use your own cat image or auto-generated placeholder
+- **Perfect for:** Best visual experience, showcasing photos
+
+### 2. 🆓 **Siya Free** (Recommended for Most Users)
+- **File:** `siya_free.py`
+- **Cost:** $0 forever
+- **Interface:** Giant emoji cat (9 expressions)
+- **Features:** Text chat, tasks, settings, FREE AI
+- **Setup:** Choose Ollama or Groq on first run
+- **Perfect for:** Privacy, unlimited use, no costs
+
+### 3. 💰 **Siya Advanced**
+- **File:** `siya_advanced.py`
+- **Cost:** OpenAI API ($5-20/month)
+- **Interface:** ASCII art cat with animations
+- **Features:** Voice input/output, TTS, tasks, OpenAI API
+- **Setup:** Enter API key when prompted
+- **Perfect for:** Voice interaction, premium features
+
+### 4. 💰 **Siya Basic**
+- **File:** `siya.py`
+- **Cost:** OpenAI API ($5-20/month)
+- **Interface:** ASCII art cat
+- **Features:** Text chat, TTS, OpenAI API
+- **Setup:** Enter API key when prompted
+- **Perfect for:** Simple OpenAI chat interface
+
+---
+
+## ⚡ Quick Start
+
+### 🎨 **Option 1: Image Version (Best Visuals)**
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Optional: Add your cat image
+# Save as cat_source.png, then run:
+python setup_cat_image.py
+
+# Run Siya
+python siya_image.py
+# OR double-click: run_siya_image.bat
+```
+
+### 🆓 **Option 2: Free Version (Easiest)**
+
+```bash
+# 1. Install Ollama (one time)
+# Visit: https://ollama.com and download
+
+# 2. Download AI model (one time)
+ollama run llama2
+
+# 3. Run Siya
+python siya_free.py
+# OR double-click: run_siya_free.bat
+
+# 4. Choose Ollama in welcome screen
+# 5. Start chatting for FREE!
+```
+
+### 💰 **Option 3: OpenAI Versions**
+
+```bash
+# 1. Get API key from platform.openai.com
+
+# 2. Run version of choice
+python siya_advanced.py  # Voice + Tasks
+# OR
+python siya.py  # Simple
+
+# 3. Enter API key when prompted
+# 4. Start chatting!
+```
+
+---
+
+## 📋 Detailed Comparison
+
+| Feature | Image | Free | Advanced | Basic |
+|---------|-------|------|----------|-------|
+| **Cost** | $0 | $0 | $5-20/mo | $5-20/mo |
+| **Cat Visual** | 🎨 Image | 😺 Emoji | ASCII | ASCII |
+| **Animations** | 6 types | Size only | States | States |
+| **Text Chat** | ✅ | ✅ | ✅ | ✅ |
+| **Voice Input** | ❌ | ❌ | ✅ | ✅ |
+| **Text-to-Speech** | ❌ | ❌ | ✅ | ✅ |
+| **Task Manager** | ✅ | ✅ | ✅ | ❌ |
+| **Settings Tab** | ✅ | ✅ | ❌ | ❌ |
+| **API Setup** | UI Wizard | UI Wizard | UI Dialog | UI Dialog |
+| **Offline Mode** | ✅ (Ollama) | ✅ (Ollama) | ❌ | ❌ |
+| **Customization** | Your images! | Limited | Limited | Limited |
 
 ---
 
@@ -70,7 +160,7 @@
 
 ### Prerequisites
 - **Python 3.8+** installed
-- **Windows 10/11** (for best emoji support)
+- **Windows 10/11** (best emoji/image support)
 - Internet connection (for initial setup)
 
 ### Step 1: Clone or Download
@@ -88,49 +178,50 @@ install.bat
 pip install -r requirements.txt
 ```
 
-### Step 3: Choose Your AI Engine
-See [AI Engine Options](#-ai-engine-options) below
+### Step 3: Choose Your Version
+See [Quick Start](#-quick-start) above for version-specific instructions.
 
 ---
 
-## ⚡ Quick Start
+## 🎨 Image Version Setup
 
-### Super Fast Launch
+### Using Your Own Cat Image
 
-**Option 1: Use the Launcher**
+**Step 1: Prepare Image**
+- Save your cat image as `cat_source.png` (or `.jpg`)
+- Place in the `siya` folder
+- Recommended: 600x600 pixels, square
+
+**Step 2: Process Image**
 ```bash
-# Double-click this file
-LAUNCHER.bat
-
-# Then choose:
-# 1 = FREE version (recommended)
-# 2 = Advanced version (needs OpenAI credits)
-# 3 = Basic version (needs OpenAI credits)
+python setup_cat_image.py
 ```
 
-**Option 2: Direct Launch**
-```bash
-# Run the FREE version directly
-python siya_free.py
+This will:
+- ✅ Load your image
+- ✅ Convert to RGB if needed
+- ✅ Resize to optimal size
+- ✅ Save as `cat_image.png`
 
-# OR double-click
-run_siya_free.bat
+**Step 3: Run**
+```bash
+python siya_image.py
 ```
 
-### First Run Setup
+### Using Placeholder Cat
 
-When you first run Siya, you'll see a **welcome screen** with two options:
+Just run directly:
+```bash
+python siya_image.py
+```
 
-1. **Ollama (Local)** - Best for privacy and unlimited use
-2. **Groq API (Cloud)** - Best for quick setup
-
-Choose one and follow the on-screen instructions!
+App will create a cute placeholder cat automatically!
 
 ---
 
 ## 🤖 AI Engine Options
 
-### Option 1: Ollama (Recommended)
+### Option 1: Ollama (Recommended - 100% Free)
 
 **Why Choose Ollama?**
 - ✅ **100% FREE** forever
@@ -139,516 +230,353 @@ Choose one and follow the on-screen instructions!
 - ✅ **Unlimited** usage
 - ✅ **Fast** responses
 
-**Setup Steps:**
-
-1. **Install Ollama**
-   - Visit: https://ollama.com
-   - Download for Windows
-   - Install (takes 2 minutes)
-
-2. **Download AI Model**
-   ```bash
-   # Open Command Prompt or PowerShell
-   ollama run llama2
-   
-   # This will download ~4GB
-   # Wait for it to complete
-   ```
-
-3. **Run Siya**
-   ```bash
-   python siya_free.py
-   ```
-
-4. **Choose Ollama in Welcome Screen**
-   - Select "Option 1: Ollama"
-   - Choose your model (llama2 recommended)
-   - Click "Save & Start Siya"
-
-**Available Models:**
-- `llama2` (4GB) - Recommended, great balance
-- `mistral` (4GB) - Fast and efficient
-- `tinyllama` (600MB) - Very fast, lighter responses
-- `llama2:13b` (7GB) - Better quality
-- `llama2:70b` (40GB) - Best quality (needs powerful PC)
-
-**Model Commands:**
+**Setup:**
 ```bash
-# List installed models
-ollama list
+# 1. Install from https://ollama.com
 
-# Download a specific model
-ollama pull mistral
+# 2. Download model
+ollama run llama2
 
-# Switch models (in Settings tab)
+# 3. Run Siya (Image or Free version)
+python siya_image.py
+
+# 4. Choose Ollama in welcome screen
 ```
 
----
+**Available Models:**
+- `llama2` (4GB) - Recommended
+- `mistral` (4GB) - Fast & efficient
+- `tinyllama` (600MB) - Very fast
+- `llama2:13b` (7GB) - Better quality
 
-### Option 2: Groq API
+### Option 2: Groq API (Free Cloud)
 
 **Why Choose Groq?**
 - ✅ **100% FREE** (no credit card!)
 - ✅ **Quick setup** (5 minutes)
-- ✅ **No downloads** required
-- ✅ **Cloud-based** reliability
-- ✅ **14,400 requests/day** limit (very generous)
+- ✅ **No downloads**
+- ✅ **14,400 requests/day**
 
-**Setup Steps:**
+**Setup:**
+```bash
+# 1. Get key from https://console.groq.com
 
-1. **Get Free API Key**
-   - Visit: https://console.groq.com
-   - Sign up (FREE, no credit card needed)
-   - Go to "API Keys" section
-   - Click "Create API Key"
-   - Copy your key (starts with `gsk_`)
+# 2. Run Siya
+python siya_image.py  # or siya_free.py
 
-2. **Run Siya**
-   ```bash
-   python siya_free.py
-   ```
+# 3. Choose Groq, enter API key
 
-3. **Choose Groq in Welcome Screen**
-   - Select "Option 2: Groq API"
-   - Paste your API key
-   - Click "Save & Start Siya"
-
-**API Key Format:**
-```
-gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# 4. Start chatting!
 ```
 
-**Daily Limits:**
-- 14,400 requests per day
-- ~600 requests per hour
-- More than enough for personal use!
+### Option 3: OpenAI (Paid)
+
+**For Advanced/Basic versions:**
+```bash
+# 1. Get key from platform.openai.com/api-keys
+
+# 2. Run version
+python siya_advanced.py
+
+# 3. Enter key when prompted
+
+# Cost: ~$5-20/month
+```
 
 ---
 
 ## 📖 Usage Guide
 
-### Main Interface
+### Chat Interface
 
 ```
-┌─────────────────────────────────────┐
-│  [💬 Chat] [✅ Tasks] [⚙️ Settings] │  ← Tabs
-├─────────────────────────────────────┤
-│                                     │
-│              😺                     │  ← Animated Cat (120pt)
-│         (HUGE EMOJI)                │
-│                                     │
-│     😺 Ready to help!               │  ← Status
-├─────────────────────────────────────┤
-│  💬 Conversation                    │
-│  ┌───────────────────────────────┐ │
-│  │ Chat messages appear here...  │ │
-│  │ [Time] 👤 You: Hello!         │ │
-│  │ [Time] 🐱 Siya: Hi there!     │ │
-│  │                               │ │
-│  └───────────────────────────────┘ │
-├─────────────────────────────────────┤
-│  [⌨️ Type Message]  [🗑️ Clear]     │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│  [💬 Chat] [✅ Tasks] [⚙️ Settings] │
+├──────────────────────────────────────┤
+│                                      │
+│         🐱 Cat Display               │
+│      (Image/Emoji/ASCII)             │
+│                                      │
+│      😺 Ready to help!               │
+├──────────────────────────────────────┤
+│  💬 Conversation                     │
+│  ┌────────────────────────────────┐ │
+│  │ [12:30] 👤 You: Hello!         │ │
+│  │ [12:30] 🐱 Siya: Hi! Meow!     │ │
+│  └────────────────────────────────┘ │
+├──────────────────────────────────────┤
+│  [⌨️ Type Message]  [🗑️ Clear]      │
+└──────────────────────────────────────┘
 ```
 
-### Chat Tab
+### Example Conversations
 
-**How to Chat:**
-1. Click "⌨️ Type Message" button
-2. Type your question or message
-3. Press Enter or click "Send"
-4. Watch the cat react!
-5. Get intelligent responses
-
-**Example Conversations:**
 ```
-You: What's 156 times 23?
-Siya: 3,588! Need help with anything else? 🐱
-
-You: Explain recursion in simple terms
-Siya: Recursion is when a function calls itself...
+You: What's 245 times 17?
+Siya: 4,165! Need help with anything else? 🐱
 
 You: Tell me a joke
 Siya: Why don't cats play poker? Too many cheetahs! 😹
+
+You: add task buy groceries
+Siya: Got it! Task added: 'buy groceries' 📝
 ```
-
-### Tasks Tab
-
-**Adding Tasks:**
-
-**Method 1: Via Chat**
-```
-Type: "add task buy groceries"
-Type: "remind me to exercise"
-Type: "create task finish homework"
-```
-
-**Method 2: Via Tasks Tab**
-1. Click "✅ Tasks" tab
-2. Type task in input field
-3. Press Enter or click "+ Add Task"
-
-**Managing Tasks:**
-- View all pending tasks in list
-- Click "✓ Done" to complete
-- Tasks save automatically
-- Persist between sessions
-
-### Settings Tab
-
-**What You Can Change:**
-- Switch between Ollama and Groq
-- Update API key (for Groq)
-- Change Ollama model
-- View app information
-
-**To Change AI Engine:**
-1. Go to "⚙️ Settings" tab
-2. Click "Change AI Engine"
-3. Choose new option
-4. Follow setup steps
-
----
-
-## 😺 Emoji Cat Guide
-
-### All 9 Expressions
-
-| Emoji | Name | When It Appears |
-|-------|------|-----------------|
-| 😺 | Happy Cat | Idle, ready to chat |
-| 😸 | Grinning Cat | Excited (you're typing) |
-| 🤔 | Thinking Face | Processing your message |
-| 😻 | Heart Eyes Cat | Responding to you |
-| 😹 | Laughing Cat | Task added successfully |
-| 😽 | Kissing Cat | Task completed |
-| 😿 | Crying Cat | Connection problems |
-| 🙀 | Surprised Cat | Error occurred |
-| 😾 | Grumpy Cat | Reserved for future |
-
-### Expression Flow
-
-**Normal Chat:**
-```
-Start: 😺 (idle)
-  ↓
-You type: 😸 (excited)
-  ↓
-You send: 🤔 (thinking)
-  ↓
-Siya responds: 😻 (speaking)
-  ↓
-Wait 3 sec: 😺 (back to idle)
-```
-
-**Adding Task:**
-```
-Command: "add task..."
-  ↓
-Processing: 🤔 (thinking)
-  ↓
-Task added: 😹 (joy!)
-  ↓
-Wait 2 sec: 😺 (idle)
-```
-
-**Completing Task:**
-```
-Click "✓ Done"
-  ↓
-Completed: 😽 (loving)
-  ↓
-Wait 2 sec: 😺 (idle)
-```
-
----
-
-## 💡 Task Management
-
-### Task Features
-
-- **Create**: Add tasks via chat or Tasks tab
-- **View**: See all pending tasks in organized list
-- **Complete**: One-click task completion
-- **Persist**: Tasks save automatically to JSON
-- **Track**: Each task has unique ID and timestamp
 
 ### Task Commands
 
-**In Chat:**
 ```
-"add task buy milk"
-"remind me to call mom"
-"create task study for exam"
-"new task workout at gym"
-```
-
-**Voice-like Commands:**
-```
-"remind me to [task]"
-"don't forget to [task]"
-"I need to [task]"
-```
-
-### Task Storage
-
-Tasks are saved in: `siya_tasks.json`
-
-**Format:**
-```json
-{
-  "id": 1,
-  "description": "Buy groceries",
-  "created": "2024-01-15T10:30:00",
-  "completed": false
-}
+"add task [description]"
+"remind me to [description]"
+"create task [description]"
+"new task [description]"
 ```
 
 ---
 
-## ⚙️ Settings
+## 🎬 Animations (Image Version)
 
-### Configuration File
+| Animation | When | Description |
+|-----------|------|-------------|
+| **Happy** | Idle | Normal display |
+| **Thinking** | Processing | Slight dim effect |
+| **Speaking** | Responding | Gentle glow |
+| **Excited** | Task added | Bounce up/down (0.6s) |
+| **Loving** | Task completed | Brightness pulse (1.2s) |
+| **Error** | Problems | Shake left/right (0.4s) |
 
-Settings are stored in: `siya_config.json`
+---
 
-**Default Configuration:**
-```json
-{
-  "use_local_ai": true,
-  "groq_api_key": "",
-  "ollama_model": "llama2",
-  "ollama_url": "http://localhost:11434"
+## 🎨 Customization
+
+### Change Cat Image (Image Version)
+
+```bash
+# Replace with your image
+copy new_cat.png cat_source.png
+python setup_cat_image.py
+```
+
+### Change Emoji (Free Version)
+
+In `siya_free.py`:
+```python
+moods = {
+    "happy": "😺",     # Change to any emoji!
+    "thinking": "🤔",
+    # etc.
 }
 ```
 
-### Changing Settings
+### Change Colors (Any Version)
 
-**Via Settings Tab:**
-1. Click "⚙️ Settings"
-2. View current configuration
-3. Click "Change AI Engine" to switch
-4. Or update API key directly
+Find these values and modify:
+```python
+bg="#1a1a2e"    # Main background
+fg="#00d4ff"    # Accent color
+```
 
-**Manual Edit:**
-You can also edit `siya_config.json` directly
+### Change AI Personality
+
+Find the system prompt:
+```python
+"You are Siya, a helpful AI cat assistant..."
+# Customize this message!
+```
+
+---
+
+## 🔑 API Key Management
+
+### Configuration Files
+
+| Version | Config File | Stores |
+|---------|-------------|--------|
+| Image/Free | `siya_config.json` | AI choice, Groq key, Ollama model |
+| Advanced/Basic | `siya_openai_config.json` | OpenAI API key |
+
+### Changing API Keys
+
+**Image/Free Versions:**
+1. Go to ⚙️ Settings tab
+2. Click "Change AI Engine"
+3. Enter new configuration
+
+**OpenAI Versions:**
+1. Delete `siya_openai_config.json`
+2. Run app again
+3. Enter new API key
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Common Issues & Solutions
+### Common Issues
 
-#### Issue: "Couldn't connect to my brain"
-**Cause:** Ollama not running  
-**Solution:**
+**"Error 429: No credits remaining"**
+- OpenAI account out of credits
+- Solution: Use FREE version instead!
+```bash
+python siya_free.py
+```
+
+**"Can't connect to my brain" (Ollama)**
 ```bash
 # Start Ollama
 ollama serve
 
-# Or run the model
+# Or run model directly
 ollama run llama2
 ```
 
-#### Issue: "API error 401"
-**Cause:** Invalid Groq API key  
-**Solution:**
-1. Go to Settings tab
-2. Update API key
-3. Make sure it starts with `gsk_`
-4. Get new key at: https://console.groq.com
-
-#### Issue: "No module named 'tkinter'"
-**Cause:** Tkinter not installed  
-**Solution:**
+**"No module named 'PIL'"**
 ```bash
-# Windows (reinstall Python with tcl/tk)
-# Or use Python from python.org
-
-# Linux
-sudo apt-get install python3-tk
+pip install Pillow
 ```
 
-#### Issue: Emoji shows as boxes
-**Cause:** Old Windows or missing fonts  
-**Solution:**
-- Update to Windows 10/11
-- Or install emoji fonts
-- App still works, just visual issue
+**"Invalid API key"**
+- Delete config file
+- Run app again
+- Enter correct key
 
-#### Issue: "Module not found" errors
-**Cause:** Dependencies not installed  
-**Solution:**
+**Cat image not showing**
+- Check `cat_image.png` exists
+- Run `setup_cat_image.py`
+- Or let app create placeholder
+
+### Error 429 Guide
+
+If you get OpenAI credit errors:
+
+**Option 1: Add Credits**
+- Visit https://platform.openai.com/billing
+- Add payment method
+- Purchase credits
+
+**Option 2: Use FREE Version** (Recommended!)
 ```bash
-pip install -r requirements.txt
-# Or run install.bat
-```
-
-#### Issue: Ollama model not found
-**Cause:** Model not downloaded  
-**Solution:**
-```bash
-# Download the model
-ollama pull llama2
-
-# Or run directly (auto-downloads)
-ollama run llama2
+python siya_image.py
+# Choose Ollama - no costs ever!
 ```
 
 ---
 
-## ❓ FAQ
+## 📚 Documentation
 
-### General Questions
+| File | Purpose |
+|------|---------|
+| **README.md** | This file - complete guide |
+| **IMAGE_VERSION_GUIDE.md** | Image version documentation |
+| **UPDATED_README.md** | v2.0 migration guide |
+| **CHANGELOG.md** | Version history |
+| **QUICKSTART.md** | Quick getting started |
+| **FREE_SETUP.md** | FREE version setup |
+| **EMOJI_CAT_GUIDE.md** | Emoji expressions |
+| **SOLUTION_SUMMARY.md** | Problem/solution reference |
 
-**Q: Is Siya really 100% free?**  
-A: Yes! Both Ollama and Groq are completely free. No hidden costs, no subscriptions, no credit card needed.
+---
 
-**Q: Which AI engine should I use?**  
-A: **Ollama** for privacy and unlimited use. **Groq** for quick setup and cloud reliability.
+## 💡 Tips & Best Practices
 
-**Q: Can I switch between engines later?**  
-A: Yes! Go to Settings → Change AI Engine.
+### For Best Experience
 
-**Q: Does it work offline?**  
-A: With Ollama, yes (after initial model download). With Groq, internet required.
+1. **Use Image Version** with your own cat photo
+2. **Choose Ollama** for unlimited free usage
+3. **Enable Tasks** to stay organized
+4. **Clear chat** between topics
+5. **Check Settings** to customize
 
-### Technical Questions
+### Performance Tips
 
-**Q: What Python version do I need?**  
-A: Python 3.8 or higher.
+1. Keep images under 800x800
+2. Use PNG format for quality
+3. Close other heavy apps
+4. Use smaller Ollama models if slow
 
-**Q: How much disk space does Ollama need?**  
-A: 
-- llama2: ~4GB
-- mistral: ~4GB
-- tinyllama: ~600MB
-- Plus ~1GB for Ollama itself
+### Privacy Tips
 
-**Q: Are my conversations private?**  
-A: With Ollama, 100% private (runs locally). With Groq, conversations go to their servers.
-
-**Q: Can I use my own OpenAI key?**  
-A: Not in this free version, but you can use `siya_advanced.py` for OpenAI support.
-
-### Feature Questions
-
-**Q: Why no voice input?**  
-A: Voice transcription requires paid APIs. We removed it to keep Siya 100% free.
-
-**Q: Can I add voice back?**  
-A: Yes, but you'll need OpenAI credits. Check `siya_advanced.py` for the original version.
-
-**Q: How many tasks can I add?**  
-A: Unlimited! They're stored locally in JSON.
-
-**Q: Can I export my chat history?**  
-A: Not currently, but you can add this feature (see Contributing).
+1. Use Ollama (100% local)
+2. Don't share config files
+3. Add configs to `.gitignore`
+4. Use different keys for testing
 
 ---
 
 ## 🎯 Use Cases
 
 ### For Students
-- Homework help and explanations
+- Homework help
 - Study planning with tasks
-- Quick calculations and research
-- Writing assistance
+- Quick calculations
+- Research assistance
 
 ### For Developers
-- Code debugging help
+- Code debugging
+- Task tracking
+- Quick reference
 - Algorithm explanations
-- Task tracking for projects
-- Quick reference lookups
 
 ### For Professionals
 - Daily task management
-- Quick information lookup
-- Email/document drafting
+- Information lookup
+- Email drafting
 - Meeting reminders
 
 ### For Everyone
-- General questions and answers
-- Entertainment (jokes, stories)
-- Learning new topics
+- General Q&A
+- Entertainment
+- Learning
 - Staying organized
 
 ---
 
-## 📊 Comparison Table
+## 🆚 Version Recommendations
 
-| Feature | Siya FREE | ChatGPT | Other AI |
-|---------|-----------|---------|----------|
-| Cost | $0 | $20/mo | Varies |
-| Privacy | High (Ollama) | Low | Varies |
-| Offline | Yes (Ollama) | No | No |
-| Limits | None (Ollama) | Yes | Yes |
-| Setup | 10 min | Instant | Varies |
-| Tasks | Built-in | No | Varies |
-| Cat | Yes! 😺 | No | No |
+### Choose **Image Version** if:
+- ✅ Want best visual experience
+- ✅ Have your own cat photos
+- ✅ Like smooth animations
+- ✅ Want to impress others
 
----
+### Choose **Free Version** if:
+- ✅ Want quick setup
+- ✅ Like emoji interface
+- ✅ Don't have images
+- ✅ Want simplicity
 
-## 🎨 Customization
+### Choose **Advanced Version** if:
+- ✅ Need voice input
+- ✅ Have OpenAI credits
+- ✅ Want TTS output
+- ✅ Premium features
 
-### Change Cat Personality
-
-Edit `siya_free.py`, find `ask_siya_free()` function:
-
-```python
-"content": "You are Siya, a helpful AI cat assistant..."
-# Change this to customize personality!
-```
-
-### Change Colors
-
-Find these color codes in `setup_ui()`:
-
-```python
-bg="#1a1a2e"  # Main background
-fg="#00d4ff"  # Accent color (cyan)
-fg="#00ff88"  # Success color (green)
-```
-
-### Add Custom Emoji
-
-In `set_cat_mood()`, add your own:
-
-```python
-moods = {
-    "happy": "😺",
-    "custom": "🦁",  # Add new expressions!
-}
-```
+### Choose **Basic Version** if:
+- ✅ Want simplest paid option
+- ✅ Have OpenAI credits
+- ✅ Don't need tasks
+- ✅ Minimal interface
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how:
+We welcome contributions!
 
-### Ways to Contribute
+### Ways to Help
 
-1. **Report Bugs**: Open an issue
-2. **Suggest Features**: Open an issue with "Feature Request"
-3. **Submit Code**: Fork, code, PR
-4. **Improve Docs**: Fix typos, add examples
-5. **Share**: Tell others about Siya!
+1. **Report Bugs** - Open an issue
+2. **Suggest Features** - Create feature request
+3. **Submit Code** - Fork and PR
+4. **Improve Docs** - Fix typos, add examples
+5. **Share** - Tell others about Siya!
 
-### Development Setup
+### Development
 
 ```bash
 git clone https://github.com/yourusername/siya.git
 cd siya
 pip install -r requirements.txt
-python siya_free.py
+python siya_image.py
 ```
-
-### Code Style
-
-- Follow PEP 8
-- Add comments for complex logic
-- Update README for new features
 
 ---
 
@@ -656,22 +584,77 @@ python siya_free.py
 
 MIT License - see [LICENSE](LICENSE) file
 
+Feel free to use, modify, and distribute!
+
 ---
 
 ## 🙏 Acknowledgments
 
-- **Ollama** - For free local AI
-- **Groq** - For free cloud AI
-- **Python** - For being awesome
+- **Ollama** - Free local AI
+- **Groq** - Free cloud AI
+- **OpenAI** - Premium AI option
+- **PIL/Pillow** - Image processing
+- **Python** - Programming language
 - **You** - For using Siya! 😺
 
 ---
 
-## 📞 Support
+## 📊 Feature Matrix
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/siya/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/siya/discussions)
-- **Email**: your.email@example.com
+| Feature | Image | Free | Advanced | Basic |
+|---------|-------|------|----------|-------|
+| Text Chat | ✅ | ✅ | ✅ | ✅ |
+| Voice Input | ❌ | ❌ | ✅ | ✅ |
+| Text-to-Speech | ❌ | ❌ | ✅ | ✅ |
+| Task Manager | ✅ | ✅ | ✅ | ❌ |
+| Settings Tab | ✅ | ✅ | ❌ | ❌ |
+| Free Option | ✅ | ✅ | ❌ | ❌ |
+| Paid Option | ❌ | ❌ | ✅ | ✅ |
+| Offline Mode | ✅ | ✅ | ❌ | ❌ |
+| Custom Images | ✅ | ❌ | ❌ | ❌ |
+| Animations | 6 types | Limited | Limited | Limited |
+| Visual Quality | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ |
+
+---
+
+## 🚀 Quick Reference
+
+### Launch Commands
+
+```bash
+# Image Version (recommended for visuals)
+python siya_image.py
+
+# Free Version (recommended for most users)
+python siya_free.py
+
+# Advanced Version (voice + tasks)
+python siya_advanced.py
+
+# Basic Version (simple chat)
+python siya.py
+
+# Or use batch files
+run_siya_image.bat
+run_siya_free.bat
+run_siya.bat
+```
+
+### Setup Commands
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Setup cat image (Image version)
+python setup_cat_image.py
+
+# Install Ollama
+# Visit: https://ollama.com
+
+# Download AI model
+ollama run llama2
+```
 
 ---
 
@@ -679,30 +662,50 @@ MIT License - see [LICENSE](LICENSE) file
 
 Siya is built with ❤️ to provide a FREE, private, and fun AI assistant experience.
 
-**Key Points:**
-- 🆓 100% FREE forever
-- 😺 Fun and engaging
-- ✅ Actually useful
-- 🔒 Private option available
-- 🚀 Easy to use
+### Key Highlights
 
-**Get Started:**
+- 🆓 **FREE forever** (Ollama option)
+- 🎨 **Beautiful interfaces** (4 versions!)
+- 😺 **Fun cat personality**
+- ✅ **Actually useful** (tasks, chat, help)
+- 🔒 **Private** (local AI option)
+- 🚀 **Easy to use** (setup wizards)
+
+### Get Started Now!
+
+**Best for most users:**
+```bash
+python siya_image.py
+```
+
+**Best for free:**
 ```bash
 python siya_free.py
 ```
 
-**Enjoy your FREE AI cat assistant! 😺✨**
+**Best for voice:**
+```bash
+python siya_advanced.py
+```
+
+---
+
+## 📞 Support & Contact
+
+- **Issues:** [GitHub Issues](https://github.com/yourusername/siya/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/yourusername/siya/discussions)
+- **Email:** your.email@example.com
 
 ---
 
 <div align="center">
 
+**🐱 Enjoy your AI Cat Assistant! 😺✨**
+
 Made with ❤️ and 🐱 | © 2024 Siya Project
+
+**Star ⭐ this repo if you love Siya!**
 
 [⬆ Back to Top](#-siya---your-free-ai-cat-assistant)
 
 </div>
-=======
-"# siya-AI-chatpot" 
-"# siya-AI-chatpot" 
->>>>>>> a9643cbed4461a3a3a610bd7f6c9b73b8b38cad1
