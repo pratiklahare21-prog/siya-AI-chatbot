@@ -2,21 +2,45 @@ import os
 import tempfile
 import sounddevice as sd
 from scipy.io.wavfile import write
-from dotenv import load_dotenv
 from openai import OpenAI
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk, scrolledtext, messagebox
 import threading
 import pyttsx3
 from datetime import datetime
 import json
-
-load_dotenv()
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+from pathlib import Path
 
 SAMPLE_RATE = 16000
 RECORD_SECONDS = 5
+CONFIG_FILE = Path("siya_openai_config.json")
+
+# OpenAI client will be initialized after getting API key
+client = None
+
+
+class ConfigManager:
+    """Manages OpenAI configuration"""
+    def __init__(self):
+        self.config_file = CONFIG_FILE
+        self.config = self.load_config()
+    
+    def load_config(self):
+        if self.config_file.exists():
+            with open(self.config_file, 'r') as f:
+                return json.load(f)
+        return {"openai_api_key": ""}
+    
+    def save_config(self):
+        with open(self.config_file, 'w') as f:
+            json.dump(self.config, f, indent=2)
+    
+    def get_api_key(self):
+        return self.config.get("openai_api_key", "")
+    
+    def set_api_key(self, key):
+        self.config["openai_api_key"] = key
+        self.save_config()
 
 
 class SiyaCatUI:
@@ -26,10 +50,49 @@ class SiyaCatUI:
         self.root.geometry("600x800")
         self.root.configure(bg="#1a1a2e")
         
+        # Initialize config
+        self.config_manager = ConfigManager()
+        
+        # Check for API key
+        api_key = self.config_manager.get_api_key()
+        if not api_key:
+            api_key = self.prompt_for_api_key()
+            if not api_key:
+                messagebox.showerror("Error", "API key required to run Siya!")
+                self.root.destroy()
+                return
+        
+        # Initialize OpenAI client
+        global client
+        try:
+            client = OpenAI(api_key=api_key)
+            # Test the API key
+            client.models.list()
+        except Exception as e:
+            error_msg = str(e)
+            if "401" in error_msg or "Incorrect API key" in error_msg:
+                messagebox.showerror("Invalid API Key", "The API key is invalid. Please enter a valid OpenAI API key.")
+                self.config_manager.set_api_key("")
+                self.root.destroy()
+                return
+            elif "429" in error_msg or "credit" in error_msg.lower():
+                messagebox.showerror(
+                    "No Credits", 
+                    "Your OpenAI account has no credits remaining.\n\n"
+                    "Options:\n"
+                    "1. Add credits at: https://platform.openai.com/billing\n"
+                    "2. Use FREE version instead: python siya_free.py"
+                )
+                self.root.destroy()
+                return
+        
         # Initialize text-to-speech
-        self.tts_engine = pyttsx3.init()
-        self.tts_engine.setProperty('rate', 175)
-        self.tts_engine.setProperty('volume', 0.9)
+        try:
+            self.tts_engine = pyttsx3.init()
+            self.tts_engine.setProperty('rate', 175)
+            self.tts_engine.setProperty('volume', 0.9)
+        except:
+            self.tts_engine = None
         
         # Animation states
         self.is_listening = False
@@ -37,6 +100,120 @@ class SiyaCatUI:
         self.is_speaking = False
         
         self.setup_ui()
+    
+    def prompt_for_api_key(self):
+        """Prompt user for OpenAI API key"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("OpenAI API Key Required")
+        dialog.geometry("500x450")
+        dialog.configure(bg="#1a1a2e")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Center the dialog
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (250)
+        y = (dialog.winfo_screenheight() // 2) - (225)
+        dialog.geometry(f"500x450+{x}+{y}")
+        
+        # Header
+        tk.Label(
+            dialog,
+            text="🔑 OpenAI API Key Required",
+            font=("Arial", 18, "bold"),
+            bg="#1a1a2e",
+            fg="#00d4ff"
+        ).pack(pady=20)
+        
+        # Info frame
+        info_frame = tk.Frame(dialog, bg="#16213e", relief=tk.RAISED, bd=2)
+        info_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            info_frame,
+            text="⚠️ This version requires an OpenAI API key\n\n"
+                 "Get your API key from:\n"
+                 "https://platform.openai.com/api-keys\n\n"
+                 "⚠️ Note: OpenAI charges for API usage\n"
+                 "💰 Approximate cost: $5-20/month\n\n"
+                 "💡 Want FREE alternative?\n"
+                 "Run: python siya_free.py (100% FREE!)",
+            font=("Arial", 10),
+            bg="#16213e",
+            fg="#ffffff",
+            justify=tk.LEFT
+        ).pack(padx=15, pady=15)
+        
+        # API Key input
+        tk.Label(
+            dialog,
+            text="Enter your OpenAI API Key:",
+            font=("Arial", 11, "bold"),
+            bg="#1a1a2e",
+            fg="#ffffff"
+        ).pack(pady=(10, 5))
+        
+        api_key_var = tk.StringVar()
+        api_key_entry = tk.Entry(
+            dialog,
+            textvariable=api_key_var,
+            font=("Consolas", 10),
+            bg="#0f3460",
+            fg="#ffffff",
+            insertbackground="#00d4ff",
+            width=50,
+            show="*"
+        )
+        api_key_entry.pack(pady=5, ipady=5)
+        api_key_entry.insert(0, "sk-")
+        api_key_entry.focus()
+        
+        result = {"key": None}
+        
+        def save_key():
+            key = api_key_var.get().strip()
+            if key and key.startswith("sk-") and len(key) > 20:
+                self.config_manager.set_api_key(key)
+                result["key"] = key
+                dialog.destroy()
+            else:
+                messagebox.showerror("Invalid Key", "Please enter a valid OpenAI API key (starts with 'sk-')")
+        
+        def cancel():
+            dialog.destroy()
+        
+        # Buttons
+        button_frame = tk.Frame(dialog, bg="#1a1a2e")
+        button_frame.pack(pady=20)
+        
+        tk.Button(
+            button_frame,
+            text="Save & Continue",
+            font=("Arial", 11, "bold"),
+            bg="#00d4ff",
+            fg="#1a1a2e",
+            relief=tk.FLAT,
+            cursor="hand2",
+            command=save_key,
+            width=15
+        ).pack(side=tk.LEFT, padx=5)
+        
+        tk.Button(
+            button_frame,
+            text="Cancel",
+            font=("Arial", 11, "bold"),
+            bg="#e94560",
+            fg="#ffffff",
+            relief=tk.FLAT,
+            cursor="hand2",
+            command=cancel,
+            width=15
+        ).pack(side=tk.LEFT, padx=5)
+        
+        api_key_entry.bind('<Return>', lambda e: save_key())
+        
+        dialog.wait_window()
+        return result["key"]
         
     def setup_ui(self):
         # Header with cat face

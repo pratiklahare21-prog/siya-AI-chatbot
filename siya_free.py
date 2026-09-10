@@ -4,7 +4,7 @@ No OpenAI credits needed! Uses Groq's free API
 """
 
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, messagebox
 import threading
 import pyttsx3
 from datetime import datetime
@@ -14,10 +14,38 @@ import requests
 
 # Free Groq API (no credit card needed!)
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_API_KEY = "gsk_your_free_api_key_here"  # Get from https://console.groq.com
 
-# Or use local Ollama (completely free, runs on your PC)
-USE_LOCAL_AI = True  # Set to True to use Ollama instead
+# Settings will be loaded from config file
+CONFIG_FILE = Path("siya_config.json")
+
+
+class ConfigManager:
+    """Manages app configuration"""
+    def __init__(self):
+        self.config_file = CONFIG_FILE
+        self.config = self.load_config()
+    
+    def load_config(self):
+        if self.config_file.exists():
+            with open(self.config_file, 'r') as f:
+                return json.load(f)
+        return {
+            "use_local_ai": True,
+            "groq_api_key": "",
+            "ollama_model": "llama2",
+            "ollama_url": "http://localhost:11434"
+        }
+    
+    def save_config(self):
+        with open(self.config_file, 'w') as f:
+            json.dump(self.config, f, indent=2)
+    
+    def get(self, key, default=None):
+        return self.config.get(key, default)
+    
+    def set(self, key, value):
+        self.config[key] = value
+        self.save_config()
 
 
 class TaskManager:
@@ -67,6 +95,7 @@ class SiyaCatUI:
         self.root.configure(bg="#1a1a2e")
         
         # Initialize components
+        self.config_manager = ConfigManager()
         self.task_manager = TaskManager()
         try:
             self.tts_engine = pyttsx3.init()
@@ -80,8 +109,308 @@ class SiyaCatUI:
         # Cat mood
         self.current_mood = "happy"
         
-        self.setup_ui()
+        # Check if first run
+        if not self.config_manager.get("groq_api_key") and not self.config_manager.get("use_local_ai"):
+            self.show_welcome_screen()
+        else:
+            self.setup_ui()
+        # Check if first run
+        if not self.config_manager.get("groq_api_key") and not self.config_manager.get("use_local_ai"):
+            self.show_welcome_screen()
+        else:
+            self.setup_ui()
+    
+    def show_welcome_screen(self):
+        """Show welcome and setup screen on first run"""
+        welcome_frame = tk.Frame(self.root, bg="#1a1a2e")
+        welcome_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
+        # Welcome header
+        tk.Label(
+            welcome_frame,
+            text="😺 Welcome to Siya!",
+            font=("Arial", 24, "bold"),
+            bg="#1a1a2e",
+            fg="#00d4ff"
+        ).pack(pady=20)
+        
+        tk.Label(
+            welcome_frame,
+            text="Your FREE AI Cat Assistant",
+            font=("Arial", 14),
+            bg="#1a1a2e",
+            fg="#ffffff"
+        ).pack(pady=5)
+        
+        # Options frame
+        options_frame = tk.Frame(welcome_frame, bg="#16213e", relief=tk.RAISED, bd=2)
+        options_frame.pack(fill=tk.BOTH, expand=True, pady=20)
+        
+        tk.Label(
+            options_frame,
+            text="Choose Your AI Engine:",
+            font=("Arial", 16, "bold"),
+            bg="#16213e",
+            fg="#00d4ff"
+        ).pack(pady=15)
+        
+        # Option 1: Ollama
+        ollama_frame = tk.LabelFrame(
+            options_frame,
+            text="Option 1: Ollama (Recommended)",
+            font=("Arial", 12, "bold"),
+            bg="#0f3460",
+            fg="#00ff88",
+            relief=tk.GROOVE,
+            bd=2
+        )
+        ollama_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            ollama_frame,
+            text="✅ 100% FREE forever\n✅ Runs on your PC (private)\n✅ No internet needed\n✅ Unlimited usage\n\n⚠️ Requires: Ollama installed\nDownload from: https://ollama.com",
+            font=("Arial", 10),
+            bg="#0f3460",
+            fg="#ffffff",
+            justify=tk.LEFT
+        ).pack(padx=10, pady=10)
+        
+        tk.Button(
+            ollama_frame,
+            text="Use Ollama",
+            font=("Arial", 11, "bold"),
+            bg="#00ff88",
+            fg="#1a1a2e",
+            relief=tk.FLAT,
+            cursor="hand2",
+            command=lambda: self.configure_ollama(welcome_frame)
+        ).pack(pady=10)
+        
+        # Option 2: Groq
+        groq_frame = tk.LabelFrame(
+            options_frame,
+            text="Option 2: Groq API",
+            font=("Arial", 12, "bold"),
+            bg="#0f3460",
+            fg="#00d4ff",
+            relief=tk.GROOVE,
+            bd=2
+        )
+        groq_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            groq_frame,
+            text="✅ 100% FREE (no credit card)\n✅ Quick setup\n✅ Cloud-based\n✅ 14,400 requests/day\n\n⚠️ Requires: Free API key\nGet from: https://console.groq.com",
+            font=("Arial", 10),
+            bg="#0f3460",
+            fg="#ffffff",
+            justify=tk.LEFT
+        ).pack(padx=10, pady=10)
+        
+        tk.Button(
+            groq_frame,
+            text="Use Groq API",
+            font=("Arial", 11, "bold"),
+            bg="#00d4ff",
+            fg="#1a1a2e",
+            relief=tk.FLAT,
+            cursor="hand2",
+            command=lambda: self.configure_groq(welcome_frame)
+        ).pack(pady=10)
+    
+    def configure_ollama(self, welcome_frame):
+        """Configure Ollama settings"""
+        welcome_frame.destroy()
+        
+        config_frame = tk.Frame(self.root, bg="#1a1a2e")
+        config_frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=40)
+        
+        tk.Label(
+            config_frame,
+            text="😺 Ollama Configuration",
+            font=("Arial", 20, "bold"),
+            bg="#1a1a2e",
+            fg="#00d4ff"
+        ).pack(pady=20)
+        
+        info_frame = tk.Frame(config_frame, bg="#16213e", relief=tk.RAISED, bd=2)
+        info_frame.pack(fill=tk.X, pady=20)
+        
+        tk.Label(
+            info_frame,
+            text="Make sure Ollama is installed and running!\n\nRun this command first:\n",
+            font=("Arial", 11),
+            bg="#16213e",
+            fg="#ffffff",
+            justify=tk.CENTER
+        ).pack(pady=10)
+        
+        tk.Label(
+            info_frame,
+            text="ollama run llama2",
+            font=("Consolas", 14, "bold"),
+            bg="#0f3460",
+            fg="#00ff88",
+            relief=tk.SOLID,
+            bd=1,
+            padx=20,
+            pady=10
+        ).pack(pady=5)
+        
+        tk.Label(
+            info_frame,
+            text="\nThis will download and start the AI model.",
+            font=("Arial", 10),
+            bg="#16213e",
+            fg="#aaaaaa"
+        ).pack(pady=(0, 15))
+        
+        # Model selection
+        tk.Label(
+            config_frame,
+            text="Select Model:",
+            font=("Arial", 11, "bold"),
+            bg="#1a1a2e",
+            fg="#ffffff"
+        ).pack(pady=(20, 5))
+        
+        model_var = tk.StringVar(value="llama2")
+        models = [
+            ("llama2 (4GB, recommended)", "llama2"),
+            ("mistral (4GB, fast)", "mistral"),
+            ("tinyllama (600MB, very fast)", "tinyllama")
+        ]
+        
+        for text, value in models:
+            tk.Radiobutton(
+                config_frame,
+                text=text,
+                variable=model_var,
+                value=value,
+                font=("Arial", 10),
+                bg="#1a1a2e",
+                fg="#ffffff",
+                selectcolor="#0f3460",
+                activebackground="#1a1a2e",
+                activeforeground="#00d4ff"
+            ).pack(anchor=tk.W, padx=100)
+        
+        def save_ollama_config():
+            self.config_manager.set("use_local_ai", True)
+            self.config_manager.set("ollama_model", model_var.get())
+            config_frame.destroy()
+            self.setup_ui()
+        
+        tk.Button(
+            config_frame,
+            text="Save & Start Siya",
+            font=("Arial", 12, "bold"),
+            bg="#00ff88",
+            fg="#1a1a2e",
+            relief=tk.FLAT,
+            cursor="hand2",
+            command=save_ollama_config
+        ).pack(pady=30)
+    
+    def configure_groq(self, welcome_frame):
+        """Configure Groq API key"""
+        welcome_frame.destroy()
+        
+        config_frame = tk.Frame(self.root, bg="#1a1a2e")
+        config_frame.pack(fill=tk.BOTH, expand=True, padx=40, pady=40)
+        
+        tk.Label(
+            config_frame,
+            text="😺 Groq API Configuration",
+            font=("Arial", 20, "bold"),
+            bg="#1a1a2e",
+            fg="#00d4ff"
+        ).pack(pady=20)
+        
+        info_frame = tk.Frame(config_frame, bg="#16213e", relief=tk.RAISED, bd=2)
+        info_frame.pack(fill=tk.X, pady=20)
+        
+        tk.Label(
+            info_frame,
+            text="Get your FREE API key from:\n",
+            font=("Arial", 11),
+            bg="#16213e",
+            fg="#ffffff"
+        ).pack(pady=(15, 5))
+        
+        tk.Label(
+            info_frame,
+            text="https://console.groq.com",
+            font=("Arial", 12, "bold"),
+            bg="#16213e",
+            fg="#00d4ff",
+            cursor="hand2"
+        ).pack(pady=5)
+        
+        tk.Label(
+            info_frame,
+            text="\n1. Sign up (no credit card needed)\n2. Go to API Keys\n3. Create new API key\n4. Paste below",
+            font=("Arial", 10),
+            bg="#16213e",
+            fg="#aaaaaa",
+            justify=tk.LEFT
+        ).pack(pady=(0, 15))
+        
+        # API Key input
+        tk.Label(
+            config_frame,
+            text="Enter Your Groq API Key:",
+            font=("Arial", 11, "bold"),
+            bg="#1a1a2e",
+            fg="#ffffff"
+        ).pack(pady=(20, 5))
+        
+        api_key_entry = tk.Entry(
+            config_frame,
+            font=("Consolas", 11),
+            bg="#0f3460",
+            fg="#ffffff",
+            insertbackground="#00d4ff",
+            relief=tk.FLAT,
+            width=50
+        )
+        api_key_entry.pack(pady=10, ipady=8)
+        api_key_entry.insert(0, "gsk_")
+        
+        error_label = tk.Label(
+            config_frame,
+            text="",
+            font=("Arial", 10),
+            bg="#1a1a2e",
+            fg="#ff5555"
+        )
+        error_label.pack()
+        
+        def save_groq_config():
+            api_key = api_key_entry.get().strip()
+            if not api_key or api_key == "gsk_":
+                error_label.config(text="❌ Please enter a valid API key!")
+                return
+            if not api_key.startswith("gsk_"):
+                error_label.config(text="❌ Groq API keys start with 'gsk_'")
+                return
+            
+            self.config_manager.set("use_local_ai", False)
+            self.config_manager.set("groq_api_key", api_key)
+            config_frame.destroy()
+            self.setup_ui()
+        
+        tk.Button(
+            config_frame,
+            text="Save & Start Siya",
+            font=("Arial", 12, "bold"),
+            bg="#00d4ff",
+            fg="#1a1a2e",
+            relief=tk.FLAT,
+            cursor="hand2",
+            command=save_groq_config
+        ).pack(pady=30)
+    
     def setup_ui(self):
         # Create notebook for tabs
         from tkinter import ttk
@@ -91,12 +420,15 @@ class SiyaCatUI:
         # Create tabs
         self.chat_frame = tk.Frame(self.notebook, bg="#1a1a2e")
         self.tasks_frame = tk.Frame(self.notebook, bg="#1a1a2e")
+        self.settings_frame = tk.Frame(self.notebook, bg="#1a1a2e")
         
         self.notebook.add(self.chat_frame, text="💬 Chat")
         self.notebook.add(self.tasks_frame, text="✅ Tasks")
+        self.notebook.add(self.settings_frame, text="⚙️ Settings")
         
         self.setup_chat_tab()
         self.setup_tasks_tab()
+        self.setup_settings_tab()
         
     def setup_chat_tab(self):
         # Header with BIG emoji cat
@@ -313,6 +645,89 @@ class SiyaCatUI:
         self.current_mood = mood
         self.cat_label.config(text=moods.get(mood, "😺"))
         
+    def setup_settings_tab(self):
+        """Settings tab for changing AI engine and API keys"""
+        # Header
+        header = tk.Frame(self.settings_frame, bg="#1a1a2e")
+        header.pack(fill=tk.X, padx=10, pady=10)
+        
+        tk.Label(
+            header,
+            text="⚙️ Settings",
+            font=("Arial", 16, "bold"),
+            bg="#1a1a2e",
+            fg="#00d4ff"
+        ).pack(side=tk.LEFT)
+        
+        # Current engine display
+        engine_frame = tk.LabelFrame(
+            self.settings_frame,
+            text="Current AI Engine",
+            font=("Arial", 11, "bold"),
+            bg="#16213e",
+            fg="#00d4ff",
+            relief=tk.GROOVE,
+            bd=2
+        )
+        engine_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        use_local = self.config_manager.get("use_local_ai", True)
+        if use_local:
+            engine_text = f"🏠 Ollama (Local)\nModel: {self.config_manager.get('ollama_model', 'llama2')}"
+        else:
+            api_key = self.config_manager.get("groq_api_key", "")
+            masked_key = api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "Not set"
+            engine_text = f"☁️ Groq API (Cloud)\nAPI Key: {masked_key}"
+        
+        tk.Label(
+            engine_frame,
+            text=engine_text,
+            font=("Arial", 11),
+            bg="#16213e",
+            fg="#ffffff",
+            justify=tk.LEFT
+        ).pack(padx=20, pady=15)
+        
+        # Change engine button
+        tk.Button(
+            engine_frame,
+            text="Change AI Engine",
+            font=("Arial", 10, "bold"),
+            bg="#e94560",
+            fg="#ffffff",
+            relief=tk.FLAT,
+            cursor="hand2",
+            command=self.change_engine
+        ).pack(pady=(0, 15))
+        
+        # About section
+        about_frame = tk.LabelFrame(
+            self.settings_frame,
+            text="About Siya",
+            font=("Arial", 11, "bold"),
+            bg="#16213e",
+            fg="#ffffff",
+            relief=tk.GROOVE,
+            bd=2
+        )
+        about_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            about_frame,
+            text="Siya - FREE AI Cat Assistant 😺\nVersion 1.0\n\n100% Free Forever!\nNo API costs, No subscriptions",
+            font=("Arial", 10),
+            bg="#16213e",
+            fg="#ffffff",
+            justify=tk.CENTER
+        ).pack(padx=20, pady=15)
+    
+    def change_engine(self):
+        """Allow user to change AI engine"""
+        if messagebox.askyesno("Change Engine", "This will restart Siya. Continue?"):
+            for widget in self.root.winfo_children():
+                widget.destroy()
+            self.show_welcome_screen()
+        
     def add_task(self):
         task_text = self.task_entry.get().strip()
         if task_text:
@@ -454,13 +869,19 @@ class SiyaCatUI:
 def ask_siya_free(user_text):
     """Use FREE AI - either Ollama (local) or Groq (online)"""
     
-    if USE_LOCAL_AI:
+    config = ConfigManager()
+    use_local_ai = config.get("use_local_ai", True)
+    
+    if use_local_ai:
         # Use Ollama (completely free, runs on your PC)
         try:
+            model = config.get("ollama_model", "llama2")
+            ollama_url = config.get("ollama_url", "http://localhost:11434")
+            
             response = requests.post(
-                "http://localhost:11434/api/generate",
+                f"{ollama_url}/api/generate",
                 json={
-                    "model": "llama2",
+                    "model": model,
                     "prompt": f"You are Siya, a helpful and friendly AI cat assistant. Be concise and add cat personality. User: {user_text}\nSiya:",
                     "stream": False
                 },
@@ -469,15 +890,19 @@ def ask_siya_free(user_text):
             if response.status_code == 200:
                 return response.json()["response"]
             else:
-                return "Meow! I couldn't connect to my brain. Is Ollama running? Start it with: ollama run llama2"
-        except:
-            return "😿 Meow! I need Ollama to be installed and running!\n\nInstall: https://ollama.com\nThen run: ollama run llama2\n\nOr set USE_LOCAL_AI = False to use Groq API instead!"
+                return "Meow! I couldn't connect to my brain. Is Ollama running?\n\n💡 Start it with: ollama run " + model
+        except Exception as e:
+            return f"😿 Meow! I need Ollama to be installed and running!\n\n💡 Install: https://ollama.com\nThen run: ollama run {config.get('ollama_model', 'llama2')}\n\nOr change to Groq API in ⚙️ Settings!"
     
     else:
         # Use Groq (free online API, needs API key)
         try:
+            api_key = config.get("groq_api_key", "")
+            if not api_key:
+                return "😿 No API key configured!\n\nGo to ⚙️ Settings tab to add your Groq API key.\n\nGet one FREE at: https://console.groq.com"
+            
             headers = {
-                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             }
             
@@ -500,9 +925,9 @@ def ask_siya_free(user_text):
             if response.status_code == 200:
                 return response.json()["choices"][0]["message"]["content"]
             else:
-                return f"😿 Meow! API error: {response.status_code}\n\nGet a FREE Groq API key at: https://console.groq.com\nThen update GROQ_API_KEY in the code!"
+                return f"😿 Meow! API error: {response.status_code}\n\nCheck your API key in ⚙️ Settings\n\nGet a FREE key at: https://console.groq.com"
         except Exception as e:
-            return f"😿 Meow! Error: {str(e)}\n\nOption 1: Get free Groq API key at https://console.groq.com\nOption 2: Install Ollama and set USE_LOCAL_AI = True"
+            return f"😿 Meow! Error: {str(e)}\n\nOption 1: Check your API key in ⚙️ Settings\nOption 2: Switch to Ollama (no API needed!)"
 
 
 def main():
