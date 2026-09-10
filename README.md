@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 😺 Siya - Your FREE AI Cat Assistant
 
 <div align="center">
@@ -701,3 +702,7 @@ Made with ❤️ and 🐱 | © 2024 Siya Project
 [⬆ Back to Top](#-siya---your-free-ai-cat-assistant)
 
 </div>
+=======
+"# siya-AI-chatpot" 
+"# siya-AI-chatpot" 
+>>>>>>> a9643cbed4461a3a3a610bd7f6c9b73b8b38cad1
