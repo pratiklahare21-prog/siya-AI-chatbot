@@ -1,4 +1,4 @@
-# 😺 Siya - Your FREE AI Cat Assistant
+# 😺 Siya - AI Cat Assistant
 
 <div align="center">
 
@@ -16,7 +16,7 @@
 </div>
 
 ---
-
+ 
 ## 🌟 Features
 
 ### 💬 **Smart AI Conversations**

@@ -1,39 +1,39 @@
 @echo off
 chcp 65001 >nul
-title 🐱 Siya Floating - Reactive Cat Assistant
+setlocal
+set PYTHONIOENCODING=utf-8
+title Siya Pro - Floating Reactive Cat
 cd /d "%~dp0"
 
 echo.
-echo ============================================
-echo   🐱 SIYA FLOATING CAT ASSISTANT 🐱
-echo ============================================
+echo ========================================================
+echo   Siya PRO - Floating Calico Cat Assistant (Always Ready!)
+echo ========================================================
+echo.
+echo   Interactions:
+echo     - SINGLE CLICK  = Meow + random cute animation
+echo     - DOUBLE CLICK  = Open chat panel
+echo     - DRAG          = Move cat anywhere on screen
+echo     - RIGHT-CLICK   = Menu (sounds, resize, animations, tasks)
+echo     - MOUSE WHEEL   = Resize cat instantly
+echo     - HOVER MOUSE   = Zoom + purr
 echo.
 
-REM Check if cat image exists, generate if not
-if not exist "cat_image.png" (
-    echo 🎨 Cat image not found. Creating beautiful cartoon cat...
-    echo.
-    python setup_floating_cat.py
+REM --- Check / generate sprites ---
+if not exist "cat_sprites\cat_normal.png" (
+    echo [Build] Creating 15+ pro cat expression sprites for the first time...
+    python -c "import sys; sys.stdout.reconfigure(errors='replace',encoding='utf-8'); from generate_pro_cat import generate_all; from pathlib import Path; generate_all(Path('cat_sprites'))" 2>nul
     echo.
 )
 
-REM Check if Pillow is installed
+REM --- Auto install Pillow if missing ---
 python -c "import PIL" 2>nul
 if errorlevel 1 (
-    echo 📦 Installing required packages...
-    pip install Pillow requests
+    echo [Install] Missing Pillow, installing now...
+    pip install Pillow 2>nul
     echo.
 )
 
-echo 🚀 Launching Siya Floating Cat...
-echo 💡 TIPS:
-echo    • Click the cat to open/close chat
-echo    • Right-click for MENU
-echo    • Drag cat anywhere on screen
-echo    • Type 'help' to see all commands
-echo    • Type 'what can you do' for full feature list
+echo [Launch] Starting Siya floating cat...
 echo.
-echo 🐱 Your reactive cat is ready! Meow!
-echo.
-
 python siya_floating.py

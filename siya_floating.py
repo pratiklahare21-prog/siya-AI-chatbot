@@ -1,12 +1,16 @@
 """
-Siya Floating - Reactive Cat Assistant with Real Task Execution
-Features:
-  - Always-on-top floating cat window
-  - Draggable anywhere on screen
-  - Expressive emotions & animations with your cat image
-  - NO API KEYS REQUIRED - 100% local intelligence
-  - Performs REAL tasks (open apps, math, files, weather, etc.)
-  - Chat interface expandable with one click
+Siya Floating Cat - PRO VERSION
+================================
+✅ True transparent frameless window (character ONLY - no box)
+✅ 15+ expression variants matching your reference calico cat
+✅ Click = meow sound (Windows native + fallback)
+✅ Hover = zoom/pulse animation
+✅ Drag = tilt + paw-shake feedback
+✅ Idle = breathing + blinking + tail-wag + random emotions
+✅ 100% offline task execution (NO API KEYS)
+✅ Right-click context menu
+✅ Expandable chat (optional - double click)
+✅ Always on top, draggable, saves position
 """
 
 import tkinter as tk
@@ -25,1040 +29,1021 @@ import random
 import platform
 import urllib.request
 import urllib.parse
+import time
+
+try:
+    import winsound
+    HAVE_WINSOUND = True
+except ImportError:
+    HAVE_WINSOUND = False
+
+try:
+    import ctypes
+    from ctypes import wintypes
+    HAVE_WIN32 = True
+except ImportError:
+    HAVE_WIN32 = False
 
 
-CONFIG_FILE = Path("siya_floating_config.json")
-TASKS_FILE = Path("siya_floating_tasks.json")
-CAT_IMAGE_FILE = Path("cat_image.png")
+APP_DIR = Path(__file__).parent.resolve()
+CONFIG_FILE = APP_DIR / "siya_pro_config.json"
+TASKS_FILE = APP_DIR / "siya_pro_tasks.json"
+SPRITES_DIR = APP_DIR / "cat_sprites"
+COMPAT_IMAGE = APP_DIR / "cat_image.png"
 
-
-class ConfigManager:
+# =============================================================
+# Configuration
+# =============================================================
+class Config:
     def __init__(self):
-        self.config_file = CONFIG_FILE
-        self.config = self.load_config()
+        self.data = self.load()
 
-    def load_config(self):
-        if self.config_file.exists():
-            with open(self.config_file, 'r') as f:
-                return json.load(f)
-        return {
-            "cat_size": 100,
+    def load(self):
+        defaults = {
+            "cat_size": 120,
             "position": {"x": None, "y": None},
-            "opacity": 0.95,
-            "tts_enabled": False,
-            "sound_enabled": True,
-            "auto_idle_animations": True
+            "opacity": 1.0,
+            "sound_on": True,
+            "idle_anims": True,
+            "show_chat_on_double_click": True,
+            "hover_zoom": True,
+            "breathing": True,
+            "meow_volume": 70,
         }
+        if CONFIG_FILE.exists():
+            try:
+                with open(CONFIG_FILE) as f:
+                    defaults.update(json.load(f))
+            except Exception:
+                pass
+        return defaults
 
-    def save_config(self):
-        with open(self.config_file, 'w') as f:
-            json.dump(self.config, f, indent=2)
+    def save(self):
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(self.data, f, indent=2)
 
-    def get(self, key, default=None):
-        return self.config.get(key, default)
+    def get(self, k, default=None):
+        return self.data.get(k, default)
 
-    def set(self, key, value):
-        self.config[key] = value
-        self.save_config()
+    def set(self, k, v):
+        self.data[k] = v
+        self.save()
 
 
+# =============================================================
+# Sound System (meow)
+# =============================================================
+class MeowSound:
+    """Play meow sound using Windows native (no files needed)"""
+
+    @staticmethod
+    def play_cute_meow():
+        """Synth cute 2-tone meow. Thread-safe. Silently falls back."""
+        try:
+            if not HAVE_WINSOUND:
+                return
+            threading.Thread(target=MeowSound._meow_impl, daemon=True).start()
+        except Exception:
+            pass
+
+    @staticmethod
+    def _meow_impl():
+        try:
+            # "Mee" - gentle sweep up
+            winsound.Beep(680, 140)
+            time.sleep(0.01)
+            winsound.Beep(780, 100)
+            time.sleep(0.01)
+            # "-ow" - fall off
+            winsound.Beep(700, 90)
+            winsound.Beep(560, 130)
+        except Exception:
+            try:
+                winsound.MessageBeep(winsound.MB_ICONASTERISK)
+            except Exception:
+                pass
+
+    @staticmethod
+    def play_purr():
+        if not HAVE_WINSOUND:
+            return
+        def _p():
+            try:
+                for i in range(5):
+                    winsound.Beep(180 + i * 5, 70)
+                    time.sleep(0.02)
+            except Exception:
+                pass
+        threading.Thread(target=_p, daemon=True).start()
+
+    @staticmethod
+    def play_happy_chirp():
+        if not HAVE_WINSOUND:
+            return
+        def _c():
+            try:
+                for f in (900, 1100, 1300, 1100, 1400):
+                    winsound.Beep(f, 45)
+                    time.sleep(0.01)
+            except Exception:
+                pass
+        threading.Thread(target=_c, daemon=True).start()
+
+
+# =============================================================
+# Task Manager
+# =============================================================
 class TaskManager:
     def __init__(self):
-        self.tasks_file = TASKS_FILE
-        self.tasks = self.load_tasks()
+        self.tasks = self._load()
 
-    def load_tasks(self):
-        if self.tasks_file.exists():
-            with open(self.tasks_file, 'r') as f:
-                return json.load(f)
+    def _load(self):
+        if TASKS_FILE.exists():
+            try:
+                with open(TASKS_FILE) as f:
+                    return json.load(f)
+            except Exception:
+                return []
         return []
 
-    def save_tasks(self):
-        with open(self.tasks_file, 'w') as f:
+    def save(self):
+        with open(TASKS_FILE, 'w') as f:
             json.dump(self.tasks, f, indent=2)
 
-    def add_task(self, description):
-        task = {
-            "id": len(self.tasks) + 1,
-            "description": description,
-            "created": datetime.now().isoformat(),
-            "completed": False
-        }
-        self.tasks.append(task)
-        self.save_tasks()
-        return task
+    def add(self, desc):
+        t = {"id": (self.tasks[-1]["id"] + 1 if self.tasks else 1),
+             "description": desc,
+             "created": datetime.now().isoformat(),
+             "completed": False}
+        self.tasks.append(t)
+        self.save()
+        return t
 
-    def complete_task(self, task_id):
-        for task in self.tasks:
-            if task["id"] == task_id:
-                task["completed"] = True
-                self.save_tasks()
+    def complete(self, tid):
+        for t in self.tasks:
+            if t["id"] == tid:
+                t["completed"] = True
+                self.save()
                 return True
         return False
 
-    def get_pending(self):
+    def pending(self):
         return [t for t in self.tasks if not t["completed"]]
 
 
-class ExpressiveCat:
-    """Handles cat image with expressive emotions and animations"""
-    def __init__(self, canvas, width=100, height=100):
-        self.canvas = canvas
-        self.width = width
-        self.height = height
-        self.base_image = None
-        self.current_photo = None
-        self.image_id = None
-        self.animation_active = False
-        self._bounce_offset = 0
-        self._blink_state = False
-        self.load_image()
-
-    def load_image(self):
-        if CAT_IMAGE_FILE.exists():
-            img = Image.open(CAT_IMAGE_FILE)
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
-            self.base_image = img.resize((self.width, self.height), Image.Resampling.LANCZOS)
-        else:
-            self.base_image = self._create_default_cat()
-            self.base_image.save(CAT_IMAGE_FILE)
-        self.show_normal()
-
-    def _create_default_cat(self):
-        size = (self.width, self.height)
-        img = Image.new('RGBA', size, (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-        cx, cy = size[0] // 2, size[1] // 2
-        r = int(min(size) * 0.38)
-        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 200, 100), outline=(200, 150, 50), width=3)
-        ear_w, ear_h = int(r * 0.45), int(r * 0.55)
-        draw.polygon([(cx - r + ear_w // 2, cy - r), (cx - r, cy - r - ear_h),
-                      (cx - r + ear_w * 2, cy - r + ear_h // 4)], fill=(255, 200, 100), outline=(200, 150, 50))
-        draw.polygon([(cx + r - ear_w // 2, cy - r), (cx + r, cy - r - ear_h),
-                      (cx + r - ear_w * 2, cy - r + ear_h // 4)], fill=(255, 200, 100), outline=(200, 150, 50))
-        eye_r = int(r * 0.2)
-        eye_y = cy - int(r * 0.1)
-        draw.ellipse([cx - int(r * 0.45) - eye_r, eye_y - eye_r, cx - int(r * 0.45) + eye_r, eye_y + eye_r],
-                     fill=(30, 30, 40), outline=(0, 0, 0))
-        draw.ellipse([cx + int(r * 0.45) - eye_r, eye_y - eye_r, cx + int(r * 0.45) + eye_r, eye_y + eye_r],
-                     fill=(30, 30, 40), outline=(0, 0, 0))
-        hr = int(eye_r * 0.4)
-        draw.ellipse([cx - int(r * 0.45) - hr + int(eye_r * 0.3), eye_y - hr,
-                      cx - int(r * 0.45) + hr + int(eye_r * 0.3), eye_y + hr], fill=(255, 255, 255))
-        draw.ellipse([cx + int(r * 0.45) - hr + int(eye_r * 0.3), eye_y - hr,
-                      cx + int(r * 0.45) + hr + int(eye_r * 0.3), eye_y + hr], fill=(255, 255, 255))
-        nose_w, nose_h = int(r * 0.22), int(r * 0.15)
-        nose_y = cy + int(r * 0.15)
-        draw.polygon([(cx, nose_y + nose_h), (cx - nose_w, nose_y - nose_h // 2),
-                      (cx + nose_w, nose_y - nose_h // 2)], fill=(255, 120, 120))
-        mouth_y = nose_y + nose_h + int(r * 0.1)
-        draw.arc([cx - int(r * 0.25), nose_y + nose_h - int(r * 0.05),
-                  cx, mouth_y + int(r * 0.05)], 0, 180, fill=(100, 60, 30), width=2)
-        draw.arc([cx, nose_y + nose_h - int(r * 0.05),
-                  cx + int(r * 0.25), mouth_y + int(r * 0.05)], 0, 180, fill=(100, 60, 30), width=2)
-        for i, dy in enumerate([-int(r * 0.1), 0, int(r * 0.1)]):
-            wy = cy + int(r * 0.12) + dy
-            draw.line([(cx - r * 1.1, wy), (cx - r * 0.55, wy)], fill=(255, 255, 255), width=1)
-            draw.line([(cx + r * 1.1, wy), (cx + r * 0.55, wy)], fill=(255, 255, 255), width=1)
-        return img
-
-    def _display(self, pil_image):
-        self.current_photo = ImageTk.PhotoImage(pil_image)
-        if self.image_id:
-            self.canvas.itemconfig(self.image_id, image=self.current_photo)
-        else:
-            self.image_id = self.canvas.create_image(
-                self.width // 2, self.height // 2, image=self.current_photo
-            )
-
-    def show_normal(self):
-        if self.animation_active:
-            return
-        img = self.base_image.copy()
-        if self._blink_state:
-            img = self._draw_closed_eyes(img)
-        self._display(img)
-
-    def _draw_closed_eyes(self, img):
-        draw = ImageDraw.Draw(img)
-        w, h = img.size
-        cx, cy = w // 2, h // 2
-        r = int(min(w, h) * 0.38)
-        eye_y = cy - int(r * 0.1)
-        ex1 = cx - int(r * 0.45)
-        ex2 = cx + int(r * 0.45)
-        lw = int(r * 0.35)
-        draw.line([(ex1 - lw // 2, eye_y), (ex1 + lw // 2, eye_y)], fill=(20, 20, 30), width=3)
-        draw.line([(ex2 - lw // 2, eye_y), (ex2 + lw // 2, eye_y)], fill=(20, 20, 30), width=3)
-        return img
-
-    def set_mood(self, mood):
-        if self.animation_active:
-            return
-        moods = {
-            "happy": self._mood_happy,
-            "thinking": self._mood_thinking,
-            "speaking": self._mood_speaking,
-            "excited": self._anim_excited,
-            "loving": self._anim_loving,
-            "error": self._anim_error,
-            "sleepy": self._mood_sleepy,
-            "surprised": self._mood_surprised,
-            "wave": self._anim_wave
-        }
-        fn = moods.get(mood, self._mood_happy)
-        fn()
-
-    def _mood_happy(self):
-        img = self.base_image.copy()
-        self._add_glow(img, (0, 255, 150, 40))
-        self._display(img)
-
-    def _mood_thinking(self):
-        img = self.base_image.copy()
-        enhancer = ImageEnhance.Brightness(img)
-        img = enhancer.enhance(0.85)
-        img = img.filter(ImageFilter.SMOOTH)
-        self._display(img)
-
-    def _mood_speaking(self):
-        img = self.base_image.copy()
-        enhancer = ImageEnhance.Brightness(img)
-        img = enhancer.enhance(1.1)
-        self._add_glow(img, (0, 200, 255, 50))
-        self._display(img)
-
-    def _mood_sleepy(self):
-        img = self._draw_closed_eyes(self.base_image.copy())
-        draw = ImageDraw.Draw(img)
-        w, h = img.size
-        for i, ch in enumerate("zZz"):
-            draw.text((w - 25 - i * 10, 10 + i * 8), ch, fill=(150, 150, 255))
-        self._display(img)
-
-    def _mood_surprised(self):
-        img = self.base_image.copy()
-        enhancer = ImageEnhance.Contrast(img)
-        img = enhancer.enhance(1.3)
-        self._add_glow(img, (255, 200, 0, 60))
-        self._display(img)
-
-    def _add_glow(self, img, color):
-        glow = Image.new('RGBA', img.size, (0, 0, 0, 0))
-        gdraw = ImageDraw.Draw(glow)
-        w, h = img.size
-        gdraw.ellipse([0, 0, w, h], fill=color)
-        glow = glow.filter(ImageFilter.GaussianBlur(radius=15))
-        return Image.alpha_composite(img.convert('RGBA'), glow).convert('RGB') if img.mode != 'RGBA' \
-            else Image.alpha_composite(img, glow)
-
-    def _anim_excited(self, count=0):
-        self.animation_active = True
-        if count >= 8:
-            self.animation_active = False
-            self.show_normal()
-            return
-        scale = 1.12 if count % 2 == 0 else 0.95
-        img = self.base_image.copy()
-        new_w = int(self.width * scale)
-        new_h = int(self.height * scale)
-        img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        canvas_w = int(self.canvas.cget("width"))
-        canvas_h = int(self.canvas.cget("height"))
-        pos = (canvas_w // 2 - new_w // 2, canvas_h // 2 - new_h // 2)
-        self._display(img)
-        if self.image_id:
-            self.canvas.coords(self.image_id, canvas_w // 2, canvas_h // 2 + (5 if count % 2 else -5))
-        self.canvas.after(80, lambda: self._anim_excited(count + 1))
-
-    def _anim_loving(self, count=0):
-        self.animation_active = True
-        if count >= 10:
-            self.animation_active = False
-            self.show_normal()
-            return
-        bright = 1.0 + (0.15 if count % 2 else 0)
-        img = self.base_image.copy()
-        enhancer = ImageEnhance.Brightness(img)
-        img = enhancer.enhance(bright)
-        if count % 2:
-            img = self._add_hearts(img, count)
-        self._display(img)
-        self.canvas.after(120, lambda: self._anim_loving(count + 1))
-
-    def _add_hearts(self, img, n):
-        draw = ImageDraw.Draw(img)
-        w, h = img.size
-        hearts = [
-            (w - 20, 15, (255, 100, 150)),
-            (10, h - 30, (255, 80, 130)),
-            (w - 30, h - 20, (255, 120, 170))
-        ]
-        for (hx, hy, c) in hearts[:min(3, n // 2 + 1)]:
-            draw.text((hx, hy), "❤", fill=c)
-        return img
-
-    def _anim_error(self, count=0):
-        self.animation_active = True
-        if count >= 10:
-            self.animation_active = False
-            self.show_normal()
-            return
-        offset = 8 if count % 2 == 0 else -8
-        if self.image_id:
-            self.canvas.move(self.image_id, offset, 0)
-        if count == 0:
-            img = self.base_image.copy()
-            enhancer = ImageEnhance.Brightness(img)
-            img = enhancer.enhance(0.8)
-            self._display(img)
-        self.canvas.after(60, lambda: self._anim_error(count + 1))
-
-    def _anim_wave(self, count=0):
-        self.animation_active = True
-        if count >= 12:
-            self.animation_active = False
-            self.show_normal()
-            return
-        tilt = 5 if count % 4 < 2 else -5
-        img = self.base_image.copy()
-        img = img.rotate(tilt, Image.Resampling.BILINEAR, expand=False)
-        self._display(img)
-        self.canvas.after(100, lambda: self._anim_wave(count + 1))
-
-
-class TaskExecutor:
-    """Executes real system tasks - NO API KEYS NEEDED"""
+# =============================================================
+# Task Executor (100% local, no keys)
+# =============================================================
+class Executor:
     @staticmethod
-    def execute(command_text):
-        text = command_text.lower().strip()
+    def run(text):
+        t = text.lower().strip()
         results = []
-        executed = False
+        hit = False
 
-        # 1. System info / Time
-        if any(w in text for w in ["time", "what time", "current time"]):
-            now = datetime.now()
-            results.append(("time", f"🕐 Current time: {now.strftime('%I:%M:%S %p')}"))
-            executed = True
-        if any(w in text for w in ["date", "today", "what day"]):
-            now = datetime.now()
-            results.append(("date", f"📅 Today is: {now.strftime('%A, %B %d, %Y')}"))
-            executed = True
-        if "day of week" in text:
-            results.append(("day", f"📆 It's {datetime.now().strftime('%A')}!"))
-            executed = True
+        # Time / Date
+        if any(w in t for w in ["time", "what time"]):
+            results.append(("time", f"🕐 {datetime.now().strftime('%I:%M:%S %p')}"))
+            hit = True
+        if any(w in t for w in ["date", "today", "what day"]):
+            results.append(("date", f"📅 {datetime.now().strftime('%A, %B %d, %Y')}"))
+            hit = True
 
-        # 2. Math calculations
-        calc_result = TaskExecutor._try_math(text)
-        if calc_result:
-            results.append(("math", f"🧮 {calc_result}"))
-            executed = True
+        # Math
+        mr = Executor._math(t)
+        if mr:
+            results.append(("math", f"🧮 {mr}"))
+            hit = True
 
-        # 3. Open applications (Windows)
-        app_map = {
-            "notepad": "notepad.exe",
-            "calculator": "calc.exe",
-            "calc": "calc.exe",
-            "paint": "mspaint.exe",
-            "wordpad": "write.exe",
-            "explorer": "explorer.exe",
-            "file explorer": "explorer.exe",
-            "files": "explorer.exe",
-            "command prompt": "cmd.exe",
-            "cmd": "cmd.exe",
-            "terminal": "cmd.exe",
-            "powershell": "powershell.exe",
-            "task manager": "taskmgr.exe",
-            "control panel": "control.exe",
-            "settings": "ms-settings:",
-            "browser": "chrome.exe",
-            "chrome": "chrome.exe",
-            "edge": "msedge.exe",
-            "firefox": "firefox.exe",
-            "media player": "wmplayer.exe",
-            "music": "wmplayer.exe",
-            "camera": "microsoft.windows.camera:",
+        # Apps
+        apps = {
+            "notepad": "notepad.exe", "calculator": "calc.exe", "calc": "calc.exe",
+            "paint": "mspaint.exe", "wordpad": "write.exe",
+            "explorer": "explorer.exe", "file explorer": "explorer.exe", "files": "explorer.exe",
+            "command prompt": "cmd.exe", "cmd": "cmd.exe", "terminal": "cmd.exe",
+            "powershell": "powershell.exe", "task manager": "taskmgr.exe",
+            "control panel": "control.exe", "settings": "ms-settings:",
+            "chrome": "chrome.exe", "edge": "msedge.exe", "firefox": "firefox.exe",
+            "media player": "wmplayer.exe", "music": "wmplayer.exe",
         }
-        for key, exe in app_map.items():
-            if f"open {key}" in text or f"start {key}" in text or f"launch {key}" in text:
+        for key, exe in apps.items():
+            if f"open {key}" in t or f"start {key}" in t:
                 try:
-                    if exe.startswith("ms-") or ":" in exe:
-                        os.startfile(exe) if platform.system() == "Windows" else webbrowser.open(exe)
+                    if exe.startswith("ms-"):
+                        os.startfile(exe)
                     else:
                         subprocess.Popen(exe, shell=True)
                     results.append(("app", f"✅ Opened {key.title()}!"))
                 except Exception as e:
-                    results.append(("app", f"😿 Could not open {key}: {e}"))
-                executed = True
+                    results.append(("app", f"😿 {e}"))
+                hit = True
                 break
 
-        # 4. Web search / open websites
-        if any(w in text for w in ["search for", "google for", "look up", "search"]):
-            query = text
-            for sw in ["search for", "google for", "look up", "search"]:
-                query = query.replace(sw, "")
-            query = query.strip()
-            if query:
-                url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
-                webbrowser.open(url)
-                results.append(("web", f"🔍 Searching Google for: '{query}'"))
-                executed = True
+        # Web search
+        for sw in ["search for", "google for", "look up"]:
+            if sw in t:
+                q = t.replace(sw, "").strip()
+                if q:
+                    webbrowser.open(f"https://www.google.com/search?q={urllib.parse.quote(q)}")
+                    results.append(("web", f"🔍 Searching: '{q}'"))
+                    hit = True
+                    break
 
-        if "open youtube" in text or "go to youtube" in text:
+        if "open youtube" in t or "go to youtube" in t:
             webbrowser.open("https://youtube.com")
-            results.append(("web", "📺 Opening YouTube!"))
-            executed = True
-        if "open github" in text or "go to github" in text:
+            results.append(("web", "📺 YouTube!")); hit = True
+        if "open github" in t or "go to github" in t:
             webbrowser.open("https://github.com")
-            results.append(("web", "💻 Opening GitHub!"))
-            executed = True
-        if ("open website" in text or "go to" in text or "visit" in text) and ("http" in text or ".com" in text or ".org" in text or ".net" in text):
-            words = text.split()
-            url = None
-            for w in words:
+            results.append(("web", "💻 GitHub!")); hit = True
+
+        if ("open website" in t or "go to" in t or "visit" in t) and ("http" in t or ".com" in t or ".org" in t):
+            for w in t.split():
                 if "." in w and not w.endswith(("a", "the", "to", "for", "of", "in", "on", "at", "and", "is", "it")):
-                    if not w.startswith("http"):
-                        w = "https://" + w
-                    url = w
-                    break
-            if url:
-                webbrowser.open(url)
-                results.append(("web", f"🌐 Opening {url}"))
-                executed = True
+                    url = w if w.startswith("http") else "https://" + w
+                    webbrowser.open(url)
+                    results.append(("web", f"🌐 {url}"))
+                    hit = True; break
 
-        # 5. Weather (using wttr.in - free, no key)
-        if any(w in text for w in ["weather", "temperature", "forecast"]):
-            city = "current"
-            if "in " in text:
-                city = text.split("in ", 1)[1].strip().split()[0]
-            elif "for " in text:
-                city = text.split("for ", 1)[1].strip().split()[0]
+        # Weather (wttr.in free, no key)
+        if any(w in t for w in ["weather", "temperature", "forecast"]):
+            city = ""
+            for kw in ["in ", "for "]:
+                if kw in t:
+                    city = t.split(kw, 1)[1].strip().split()[0]
+            if not city:
+                city = ""
             try:
-                url = f"https://wttr.in/{city}?format=%C+%t+%w"
-                with urllib.request.urlopen(url, timeout=5) as resp:
-                    weather = resp.read().decode('utf-8').strip()
-                results.append(("weather", f"🌤️ Weather in {city}: {weather}"))
-            except:
-                results.append(("weather", "🌤️ Weather: Unable to fetch (offline mode)"))
-            executed = True
+                url = f"https://wttr.in/{city or ''}?format=%C+%t+%w"
+                with urllib.request.urlopen(url, timeout=5) as r:
+                    w = r.read().decode().strip()
+                results.append(("weather", f"🌤️ {city or 'Local'}: {w}"))
+            except Exception:
+                results.append(("weather", "🌤️ Weather fetch failed (offline?)"))
+            hit = True
 
-        # 6. File operations
-        if "list files" in text or "show files" in text or "what's in this folder" in text or "current directory" in text:
+        # Files
+        if any(w in t for w in ["list files", "show files", "what's in this folder", "current directory"]):
             cwd = os.getcwd()
-            files = os.listdir(cwd)
-            file_list = "\n".join(f"- {f}" for f in files[:15])
-            extra = f"\n... and {len(files) - 15} more" if len(files) > 15 else ""
-            results.append(("files", f"📂 Files in:\n{cwd}\n\n{file_list}{extra}"))
-            executed = True
+            fs = os.listdir(cwd)
+            lst = "\n".join(f"- {f}" for f in fs[:15])
+            extra = f"\n... ({len(fs) - 15} more)" if len(fs) > 15 else ""
+            results.append(("files", f"📂 {cwd}\n{lst}{extra}")); hit = True
 
-        if "create file" in text or "make file" in text:
+        if "create file" in t or "make file" in t:
             name = "new_file.txt"
-            words = text.split()
-            for i, w in enumerate(words):
-                if w in ["file", "named"] and i + 1 < len(words):
-                    fname = words[i + 1].strip('"').strip("'")
-                    if "." in fname:
-                        name = fname
-                    break
+            ws = t.split()
+            for i, w in enumerate(ws):
+                if w in ["file", "named"] and i + 1 < len(ws):
+                    n = ws[i + 1].strip('"').strip("'")
+                    if "." in n: name = n
             try:
                 Path(name).touch()
-                results.append(("files", f"📄 Created file: {name}"))
+                results.append(("files", f"📄 {name}")); hit = True
             except Exception as e:
-                results.append(("files", f"❌ Could not create: {e}"))
-            executed = True
+                results.append(("files", f"❌ {e}"))
 
-        if "create folder" in text or "make directory" in text or "new folder" in text:
+        if any(w in t for w in ["create folder", "make directory", "new folder"]):
             name = "new_folder"
-            words = text.split()
-            for i, w in enumerate(words):
-                if w in ["folder", "directory", "named"] and i + 1 < len(words):
-                    fname = words[i + 1].strip('"').strip("'")
-                    name = fname
-                    break
+            ws = t.split()
+            for i, w in enumerate(ws):
+                if w in ["folder", "directory", "named"] and i + 1 < len(ws):
+                    name = ws[i + 1].strip('"').strip("'")
             try:
                 Path(name).mkdir(exist_ok=True)
-                results.append(("files", f"📁 Created folder: {name}"))
+                results.append(("files", f"📁 {name}")); hit = True
             except Exception as e:
-                results.append(("files", f"❌ Could not create folder: {e}"))
-            executed = True
+                results.append(("files", f"❌ {e}"))
 
-        # 7. Jokes & fun
-        if any(w in text for w in ["joke", "tell me a joke", "funny"]):
+        # Fun
+        if any(w in t for w in ["joke", "tell me a joke"]):
             jokes = [
                 "Why don't cats play poker in the jungle? Too many cheetahs! 😹",
-                "What do you call a cat that likes to bowl? A purr-fect game! 🎳",
-                "Why did the cat sit on the computer? To keep an eye on the mouse! 🖱️",
+                "What do you call a cat that bowls? A purr-fect game! 🎳",
+                "Why did the cat sit on the computer? To watch the mouse! 🖱️",
                 "What's a cat's favorite color? Purr-ple! 💜",
-                "Why are cats so good at video games? They have nine lives! 🎮",
-                "What do you call a cat that can sing? A purr-former! 🎤",
+                "Why are cats great at games? Nine lives! 🎮",
+                "What do you call a singing cat? A purr-former! 🎤",
             ]
-            results.append(("fun", f"😂 {random.choice(jokes)}"))
-            executed = True
+            results.append(("fun", f"😂 {random.choice(jokes)}")); hit = True
 
-        if "quote" in text or "inspire me" in text or "motivation" in text:
-            quotes = [
-                "🌟 The secret of getting ahead is getting started. - Mark Twain",
-                "🌟 Your time is limited, don't waste it living someone else's life. - Steve Jobs",
-                "🌟 The only way to do great work is to love what you do. - Steve Jobs",
-                "🌟 In the middle of difficulty lies opportunity. - Albert Einstein",
-                "🌟 Believe you can and you're halfway there. - Theodore Roosevelt",
-                "🌟 Every purr-fect achievement was once considered impossible. 🐱",
+        if any(w in t for w in ["quote", "inspire", "motivation"]):
+            qs = [
+                "🌟 Getting ahead = getting started.",
+                "🌟 Your time is limited — own it.",
+                "🌟 Love what you do → great work.",
+                "🌟 Opportunity lives inside difficulty.",
+                "🌟 Believing = halfway there.",
+                "🌟 Every purr-fect thing was once impossible. 🐱",
             ]
-            results.append(("quote", random.choice(quotes)))
-            executed = True
+            results.append(("quote", random.choice(qs))); hit = True
 
-        if any(w in text for w in ["flip a coin", "heads or tails", "toss a coin"]):
-            result = random.choice(["Heads!", "Tails!"])
-            results.append(("fun", f"🪙 {result}"))
-            executed = True
+        if any(w in t for w in ["flip a coin", "heads or tails", "toss"]):
+            results.append(("fun", f"🪙 {random.choice(['Heads!', 'Tails!'])}")); hit = True
+        if any(w in t for w in ["roll dice", "roll a die"]):
+            results.append(("fun", f"🎲 Rolled a {random.randint(1, 6)}!")); hit = True
 
-        if any(w in text for w in ["roll dice", "roll a die", "dice"]):
-            n = random.randint(1, 6)
-            results.append(("fun", f"🎲 Rolled a {n}!"))
-            executed = True
-
-        # 8. Conversational (fallback rule-based)
-        if not executed:
-            results.append(("chat", TaskExecutor._chat_response(text)))
-
+        # Chat fallback
+        if not hit:
+            results.append(("chat", Executor._chat(t)))
         return results
 
     @staticmethod
-    def _try_math(text):
+    def _math(t):
         import re
-        # Extract simple math expressions
-        expr_patterns = [
-            r'what is ([\d+\-*/().%\s]+)',
-            r'calculate ([\d+\-*/().%\s]+)',
-            r'solve ([\d+\-*/().%\s]+)',
-            r'([\d]+\s*[+\-*/%]\s*[\d]+(?:\s*[+\-*/%]\s*[\d]+)*)',
-        ]
-        for pat in expr_patterns:
-            match = re.search(pat, text, re.IGNORECASE)
-            if match:
-                expr = match.group(1).strip()
-                try:
-                    safe_chars = set("0123456789+-*/().% ")
-                    if all(c in safe_chars for c in expr):
-                        result = eval(expr)
-                        return f"{expr} = {result}"
-                except:
-                    pass
+        for pat in [r'what is ([\d+\-*/().%\s]+)',
+                    r'calculate ([\d+\-*/().%\s]+)',
+                    r'solve ([\d+\-*/().%\s]+)',
+                    r'([\d]+\s*[+\-*/%]\s*[\d]+(?:\s*[+\-*/%]\s*[\d]+)*)']:
+            m = re.search(pat, t, re.IGNORECASE)
+            if m:
+                e = m.group(1).strip()
+                if all(c in "0123456789+-*/().% " for c in e):
+                    try:
+                        return f"{e} = {eval(e)}"
+                    except Exception:
+                        pass
         return None
 
     @staticmethod
-    def _chat_response(text):
-        t = text.lower()
-        greetings = {
-            "hi": "Meow! Hi there! 😺 How can I help you today?",
-            "hello": "Hello! 🐱 I'm Siya! Ready to help with anything!",
-            "hey": "Hey hey! 😸 What's on your mind?",
-            "good morning": "Good morning! ☀️ Hope your day is purr-fect!",
-            "good afternoon": "Good afternoon! 🌤️ What can I do for you?",
-            "good evening": "Good evening! 🌙 Need any help tonight?",
+    def _chat(t):
+        greet = {
+            "hi": "Meow! Hi! 😺 How can I help?",
+            "hello": "Hello! 🐱 I'm Siya! Ready for anything!",
+            "hey": "Hey hey! 😸 What's up?",
+            "good morning": "Good morning! ☀️ Purr-fect day ahead!",
+            "good afternoon": "Good afternoon! 🌤️ Need anything?",
+            "good evening": "Good evening! 🌙 I'm here!",
         }
-        for key, resp in greetings.items():
-            if key in t:
-                return resp
-
-        if "how are you" in t:
-            return "I'm doing purr-fectly! 😻 Thanks for asking! How about you?"
-
+        for k, r in greet.items():
+            if k in t: return r
+        if "how are you" in t: return "I'm purr-fect! 😻 Thanks! You?"
         if "your name" in t or "who are you" in t:
-            return "I'm Siya! 🐱 Your floating reactive cat assistant! I'm here 24/7 to help with everything!"
-
-        if "what can you do" in t or "help" in t or "capabilities" in t:
-            return ("✨ I can do MANY things! ✨\n\n"
-                    "📅 Time & Date: Ask 'what time is it'\n"
-                    "🧮 Math: Ask 'what is 25 * 17'\n"
-                    "🖥️ Open Apps: 'open notepad', 'open chrome', 'open calculator'\n"
-                    "🔍 Web Search: 'search for python tutorials'\n"
-                    "🌐 Visit Sites: 'open youtube.com', 'go to github'\n"
-                    "🌤️ Weather: 'what is the weather in tokyo'\n"
-                    "📁 Files: 'list files', 'create file notes.txt', 'new folder projects'\n"
-                    "🎲 Fun: 'tell me a joke', 'flip a coin', 'roll dice', 'give me a quote'\n"
-                    "✅ Tasks: 'add task buy groceries', 'show tasks'\n\n"
-                    "Just ask! Meow! 😽")
-
-        if "thank" in t:
-            return "You're very welcome! 😻 Anytime you need me, I'm here! *purrs*"
-
-        if "bye" in t or "goodbye" in t or "see you" in t:
-            return "Bye bye! 👋 I'll be right here waiting! *waves paw* 🐾"
-
-        if "love you" in t or "i love u" in t:
-            return "Aww! I love you too! 💖 *happy purring* 😻💕"
-
-        if "cat" in t:
-            return "Did someone say CAT? That's ME! 🐱 Meow meow! 😸"
-
-        if "hungry" in t:
-            return "Are you hungry? 🍽️ Maybe open a recipe website with: 'search for easy recipes'!"
-
-        if "tired" in t:
-            return "Aww, time to rest! 😴 Remember to take breaks! Your cat cares about you! 💤"
-
-        if "happy" in t:
-            return "Yay! Your happiness makes me happy too! 🎉 *does happy bounce* 😸"
-
-        if "sad" in t or "upset" in t or "depressed" in t:
-            return "Oh no... 💔 Sending you BIG kitty hugs! 🤗 Want me to tell you a joke? Just ask! ❤️"
-
-        # Default friendly responses
-        defaults = [
-            f"Meow! 😺 I heard: '{text}'. Let me help! Try asking 'what can you do' for my full list of powers!",
-            f"🐱 Interesting! You said: '{text}'. I can open apps, do math, search web, and more! Ask 'help'!",
-            f"😸 Got it! '{text}' - remember, I'm a cat of many talents! Math, apps, web, files... ask away!",
-        ]
-        return random.choice(defaults)
+            return "I'm Siya! 🐱 Your floating reactive calico cat! Always ready to help!"
+        if "what can you do" in t or t in ("help", "?"):
+            return (
+                "✨ My powers ✨\n"
+                "⏰ time/date · 🧮 math · 🖥️ open apps\n"
+                "🔍 search web · 🌤️ weather · 📁 files\n"
+                "🎲 joke/quote/dice/coin · ✅ tasks\n"
+                "Right-click me for the menu! 😽"
+            )
+        if "thank" in t: return "Anytime! 😻 *happy purr*"
+        if any(w in t for w in ["bye", "goodbye", "see you"]):
+            return "Bye bye! 👋 I'll be right here! *waves paw* 🐾"
+        if "love you" in t: return "Aww I love you too! 💖 *purring hard* 😻💕"
+        if "cat" in t: return "CAT? That's me! 🐱 Meow meow! 😸"
+        if "hungry" in t: return "🍽️ Try: search for easy recipes"
+        if "tired" in t: return "Rest! 💤 Your cat cares! 😴"
+        if "happy" in t: return "YAY! 🎉 *bounce bounce* 😸"
+        if any(w in t for w in ["sad", "upset", "depressed"]):
+            return "💔 Kitty hugs! 🤗 Say 'joke' for a smile! ❤️"
+        return random.choice([
+            f"Meow 😺 Heard: '{t}'. Try 'help' to see all my tricks!",
+            f"🐱 Got it! '{t}' — I can do math, open apps, search web, + more! Say 'help'!",
+            f"😸 '{t}'! Remember — right-click me for a quick menu!",
+        ])
 
 
-class FloatingCatUI:
+# =============================================================
+# Pro Cat UI
+# =============================================================
+class ProCatApp:
+    EXPRESSIONS = ["normal", "happy", "sleepy", "blink", "thinking",
+                   "surprised", "excited", "loving", "shy", "angry",
+                   "sad", "crying", "playful", "wink"]
+
     def __init__(self, root):
         self.root = root
-        self.config = ConfigManager()
-        self.task_mgr = TaskManager()
-        self.executor = TaskExecutor()
+        self.cfg = Config()
+        self.tasks = TaskManager()
+        self.sound = MeowSound()
 
-        # Floating window setup
+        # ---------- True frameless transparent window ----------
         self.root.overrideredirect(True)
         self.root.attributes('-topmost', True)
+        self.root.attributes('-alpha', self.cfg.get("opacity", 1.0))
+        # Transparent color-key: magenta
+        self.TRANSPARENT = "#ff00ff"
         try:
-            self.root.attributes('-alpha', self.config.get("opacity", 0.95))
-        except:
+            self.root.wm_attributes('-transparentcolor', self.TRANSPARENT)
+        except Exception:
             pass
+        self.root.configure(bg=self.TRANSPARENT)
 
-        cat_size = self.config.get("cat_size", 100)
-        self.cat_w = cat_size
-        self.cat_h = cat_size
-        self.expanded = False
-        self.drag_data = {"x": 0, "y": 0}
+        # Geometry
+        self.size = self.cfg.get("cat_size", 120)
+        self._place_window()
+        self.root.configure(bg=self.TRANSPARENT)
+
+        # State
+        self._drag = {"x": 0, "y": 0}
+        self._moved = False
+        self._expanded = False
+        self._current_expr = "normal"
+        self._hover = False
+        self._anim_lock = False
+
+        # Sprites (cache)
+        self._sprites = {}  # key: (expr, size, rotation, scale) -> PhotoImage
+
+        # ---------- Character canvas (no box fill) ----------
+        self.canvas = tk.Canvas(self.root, width=self.size, height=self.size,
+                                bg=self.TRANSPARENT, highlightthickness=0, bd=0,
+                                cursor="hand2")
+        self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.canvas.configure(bg=self.TRANSPARENT)
+
+        # Image on canvas
+        self._img_id = self.canvas.create_image(self.size // 2, self.size // 2, anchor=tk.CENTER)
+
+        # Optional chat panel frame (not created until needed)
+        self.chat_frame = None
         self.chat_w = 380
         self.chat_h = 480
 
-        # Position window
-        self._position_window()
-        self.root.configure(bg="black")
-        try:
-            self.root.wm_attributes('-transparentcolor', 'black')
-        except:
-            self.root.configure(bg="#222")
+        # Show initial sprite
+        self._show_expr("normal")
+        self._build_menu()
 
-        self._build_ui()
-        self._start_idle_animations()
-        self.cat.set_mood("wave")
+        # Bindings
+        for w in (self.canvas,):
+            w.bind('<Button-1>', self._press)
+            w.bind('<B1-Motion>', self._drag_move)
+            w.bind('<ButtonRelease-1>', self._release)
+            w.bind('<Double-Button-1>', self._double_click)
+            w.bind('<Enter>', self._hover_in)
+            w.bind('<Leave>', self._hover_out)
+            w.bind("<Button-3>", self._menu_popup)
+            w.bind('<MouseWheel>', self._wheel_resize)  # Win / X11
 
-    def _position_window(self):
+        # Idle engine
+        self._start_idle_engine()
+
+        # Greeting
+        self.root.after(700, lambda: self._anim("wave"))
+        self.root.after(1400, self.sound.play_happy_chirp)
+
+    # ---------- Geometry ----------
+    def _place_window(self):
         self.root.update_idletasks()
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
-        pos = self.config.get("position", {})
-        px = pos.get("x")
-        py = pos.get("y")
-        if px is None or py is None:
-            px = sw - self.cat_w - 40
-            py = sh - self.cat_h - 100
-        self.root.geometry(f"{self.cat_w}x{self.cat_h}+{px}+{py}")
+        pos = self.cfg.get("position", {})
+        x, y = pos.get("x"), pos.get("y")
+        if x is None:
+            x = sw - self.size - 50
+        if y is None:
+            y = sh - self.size - 140
+        x = max(0, min(x, sw - self.size))
+        y = max(0, min(y, sh - self.size))
+        self.root.geometry(f"{self.size}x{self.size}+{x}+{y}")
 
-    def _build_ui(self):
-        # Main container
-        self.main_frame = tk.Frame(self.root, bg="black", highlightthickness=0)
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
+    # ---------- Sprites ----------
+    def _load_sprite(self, expr, scale=1.0, tilt=0.0):
+        """Load sprite with caching. Falls back gracefully."""
+        key = (expr, self.size, round(scale, 2), round(tilt, 1))
+        if key in self._sprites:
+            return self._sprites[key]
 
-        # Cat canvas - always shown
-        self.cat_canvas = tk.Canvas(
-            self.main_frame, width=self.cat_w, height=self.cat_h,
-            bg="black", highlightthickness=0, cursor="hand2"
-        )
-        self.cat_canvas.pack()
+        # Prefer dedicated sprite
+        fpath = SPRITES_DIR / f"cat_{expr}.png"
+        if not fpath.exists():
+            # Fallback order
+            for alt in [COMPAT_IMAGE, SPRITES_DIR / "cat_normal.png"]:
+                if (alt and alt.exists()):
+                    fpath = alt; break
+        try:
+            pil = Image.open(fpath).convert("RGBA")
+        except Exception:
+            pil = self._gen_fallback(expr)
 
-        self.cat = ExpressiveCat(self.cat_canvas, self.cat_w, self.cat_h)
+        # Scale
+        target = max(1, int(self.size * scale))
+        pil = pil.resize((target, target), Image.Resampling.LANCZOS)
 
-        # Drag bindings
-        for widget in [self.cat_canvas, self.main_frame]:
-            widget.bind('<Button-1>', self._on_drag_start)
-            widget.bind('<B1-Motion>', self._on_drag_move)
-            widget.bind('<ButtonRelease-1>', self._on_drag_end)
+        # Tilt
+        if abs(tilt) > 0.1:
+            pil = pil.rotate(tilt, Image.Resampling.BILINEAR, expand=False,
+                             resample=Image.Resampling.BILINEAR)
 
-        # Click to expand (single click without drag)
-        self._drag_moved = False
-        self.cat_canvas.bind('<ButtonRelease-1>', self._on_cat_click)
+        # Paste onto magenta canvas for color-key transparency on tkinter
+        canvas_img = Image.new("RGBA", (self.size, self.size), (255, 0, 255, 255))
+        px = (self.size - pil.width) // 2
+        py = (self.size - pil.height) // 2
+        # Composite to respect alpha: wherever pil is transparent, use magenta
+        canvas_img = Image.alpha_composite(canvas_img,
+                                           Image.new("RGBA", canvas_img.size, (255, 0, 255, 0)))
+        # Paste with mask = pil alpha
+        canvas_img.paste(pil, (px, py), pil)
+        # Convert to RGB and ensure transparent pixels are exactly magenta (#ff00ff)
+        rgb = Image.new("RGB", canvas_img.size, (255, 0, 255))
+        rgb.paste(canvas_img.convert("RGB"), mask=canvas_img.split()[-1])
 
-        # Context menu
-        self._build_context_menu()
+        photo = ImageTk.PhotoImage(rgb)
+        self._sprites[key] = photo
+        return photo
 
-        # Chat panel (initially hidden)
-        self.chat_frame = None
+    def _gen_fallback(self, expr):
+        # Tiny in-memory fallback calico blob (no disk needed)
+        SZ = 512
+        img = Image.new("RGBA", (SZ, SZ), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        cx, cy = SZ // 2, SZ // 2
+        # Body
+        d.ellipse([cx - 210, cy - 20, cx + 210, cy + 280], fill=(52, 55, 64, 255))
+        d.ellipse([cx - 150, cy - 50, cx + 150, cy + 240], fill=(250, 248, 244, 255))
+        d.ellipse([cx + 80, cy - 30, cx + 230, cy + 180], fill=(242, 165, 55, 255))
+        # Head
+        d.ellipse([cx - 180, cy - 260, cx + 180, cy + 20], fill=(250, 248, 244, 255))
+        d.ellipse([cx - 220, cy - 200, cx - 50, cy - 40], fill=(242, 165, 55, 255))
+        d.ellipse([cx + 60, cy - 220, cx + 220, cy - 50], fill=(52, 55, 64, 255))
+        # Paws
+        for px in (cx - 90, cx + 90):
+            d.ellipse([px - 65, cy + 230, px + 65, cy + 320], fill=(250, 248, 244, 255))
+        # Ears
+        d.polygon([(cx - 155, cy - 220), (cx - 105, cy - 320), (cx - 75, cy - 220)], fill=(242, 165, 55, 255))
+        d.polygon([(cx + 75, cy - 220), (cx + 105, cy - 320), (cx + 155, cy - 220)], fill=(52, 55, 64, 255))
+        # Eyes
+        for s in (-1, 1):
+            e = [cx + s * 75 - 40, cy - 110 - 50, cx + s * 75 + 40, cy - 110 + 50]
+            d.ellipse(e, fill=(255, 255, 255, 255))
+            d.ellipse([e[0] + 2, e[1] + 2, e[2] - 2, e[3] - 2], fill=(18, 20, 28, 255))
+            d.ellipse([e[0] + 10, e[1] + 10, e[2] - 10, e[3] - 10], fill=(45, 175, 195, 255))
+            if expr in ("closed", "sleepy", "blink"):
+                d.ellipse([e[0], e[1] + 18, e[2], e[3] - 10], fill=(18, 20, 28, 255))
+        # Nose
+        d.polygon([(cx, cy - 20), (cx - 22, cy - 48), (cx + 22, cy - 48)], fill=(255, 118, 85, 255))
+        # Mouth
+        d.arc([cx - 45, cy - 30, cx + 5, cy + 20], 0, 180, fill=(92, 58, 46, 255), width=3)
+        d.arc([cx - 5, cy - 30, cx + 45, cy + 20], 0, 180, fill=(92, 58, 46, 255), width=3)
+        return img.resize((800, 800), Image.Resampling.LANCZOS)
 
-    def _build_context_menu(self):
-        self.menu = tk.Menu(self.root, tearoff=0, bg="#1a1a2e", fg="white",
+    def _show_expr(self, expr, scale=1.0, tilt=0.0, clear_old=False):
+        if clear_old:
+            self._sprites.pop((expr, self.size, round(scale, 2), round(tilt, 1)), None)
+        photo = self._load_sprite(expr, scale=scale, tilt=tilt)
+        self.canvas.itemconfig(self._img_id, image=photo)
+        self._current_expr = expr
+
+    # ---------- Animation engine ----------
+    def _anim(self, kind):
+        """High-level named animations (thread-safe via after)."""
+        if self._anim_lock:
+            return
+
+        def _run():
+            self._anim_lock = True
+            try:
+                if kind == "wave":
+                    for i, tilt in enumerate([-8, -14, -6, 8, 14, 6, -4, 4, 0]):
+                        self.root.after(i * 85, lambda t=tilt: self._show_expr("happy", tilt=t))
+                    self.root.after(10 * 85, lambda: self._show_expr("normal"))
+                elif kind == "bounce":
+                    seq = [1.0, 1.1, 1.18, 1.1, 1.0, 0.95, 1.02, 1.0]
+                    for i, s in enumerate(seq):
+                        expr = "excited" if i % 2 == 0 else "happy"
+                        self.root.after(i * 80, lambda ss=s, ex=expr: self._show_expr(ex, scale=ss))
+                elif kind == "shake":
+                    for i, dx in enumerate([0, -5, 8, -8, 6, -4, 3, 0]):
+                        self.root.after(i * 55, lambda d=dx: self.canvas.coords(
+                            self._img_id, self.size // 2 + d, self.size // 2))
+                    self.root.after(10 * 55, lambda: self.canvas.coords(
+                        self._img_id, self.size // 2, self.size // 2))
+                elif kind == "heart_pulse":
+                    for i, s in enumerate([1.0, 1.08, 1.12, 1.05, 1.0, 1.07, 1.0]):
+                        ex = "loving" if i < 6 else "happy"
+                        self.root.after(i * 120, lambda ss=s, e=ex: self._show_expr(e, scale=ss))
+                elif kind == "sneeze":
+                    seq = [("normal", 1.0), ("normal", 0.96), ("normal", 0.93),
+                           ("surprised", 1.08), ("happy", 1.02), ("normal", 1.0)]
+                    for i, (e, s) in enumerate(seq):
+                        self.root.after(i * 90, lambda ee=e, ss=s: self._show_expr(ee, scale=ss))
+                elif kind in ("error", "angry_shake"):
+                    self._show_expr("angry" if kind == "angry_shake" else "crying")
+                    for i, dx in enumerate([0, -6, 10, -10, 7, -5, 3, 0]):
+                        self.root.after(i * 50, lambda d=dx: self.canvas.coords(
+                            self._img_id, self.size // 2 + d, self.size // 2))
+                    self.root.after(500, lambda: (self.canvas.coords(
+                        self._img_id, self.size // 2, self.size // 2), self._show_expr("normal")))
+            finally:
+                total = {"wave": 900, "bounce": 700, "shake": 550,
+                         "heart_pulse": 900, "sneeze": 600, "error": 700, "angry_shake": 700}.get(kind, 700)
+                self.root.after(total + 50, self._release_lock)
+        _run()
+
+    def _release_lock(self):
+        self._anim_lock = False
+
+    # ---------- Interaction bindings ----------
+    def _press(self, ev):
+        self._drag["x"] = ev.x_root - self.root.winfo_x()
+        self._drag["y"] = ev.y_root - self.root.winfo_y()
+        self._moved = False
+
+    def _drag_move(self, ev):
+        self._moved = True
+        x = ev.x_root - self._drag["x"]
+        y = ev.y_root - self._drag["y"]
+        # Tilt feedback when dragging
+        tilt = max(-10, min(10, (ev.x - self.size // 2) / 8))
+        self.root.geometry(f"+{x}+{y}")
+        if not self._anim_lock:
+            try:
+                self._show_expr("happy", tilt=tilt)
+            except Exception:
+                pass
+
+    def _release(self, ev):
+        # Save pos
+        self.cfg.set("position", {"x": self.root.winfo_x(), "y": self.root.winfo_y()})
+        # Reset tilt
+        if not self._anim_lock:
+            self.root.after(80, lambda: self._show_expr("normal"))
+
+    def _double_click(self, ev):
+        MeowSound.play_cute_meow()
+        self._anim("bounce")
+        if self.cfg.get("show_chat_on_double_click", True):
+            self.root.after(500, self._toggle_chat)
+
+    def _hover_in(self, ev):
+        if self._anim_lock or self._expanded:
+            return
+        self._hover = True
+        if self.cfg.get("hover_zoom", True):
+            self._show_expr("happy", scale=1.08)
+            MeowSound.play_purr()
+
+    def _hover_out(self, ev):
+        self._hover = False
+        if not self._anim_lock and not self._expanded:
+            self._show_expr(self._current_expr if self._current_expr in ("sleepy",) else "normal")
+
+    def _wheel_resize(self, ev):
+        # Ctrl+wheel? Or just wheel? Let's just allow wheel for quick resize (no modifiers)
+        delta = 1 if ev.delta > 0 else -1
+        new = max(60, min(250, self.size + delta * 6))
+        if new != self.size:
+            self._resize(new)
+
+    def _resize(self, new_size):
+        self.size = new_size
+        self.cfg.set("cat_size", new_size)
+        self.canvas.config(width=new_size, height=new_size)
+        self.canvas.coords(self._img_id, new_size // 2, new_size // 2)
+        self._sprites.clear()
+        self._show_expr("normal")
+        self.root.geometry(f"{new_size}x{new_size}")
+
+    # ---------- Click handler (single click without drag) ----------
+    def _on_single_click_action(self):
+        """Single press-release without drag = click."""
+        MeowSound.play_cute_meow()
+        r = random.random()
+        if r < 0.25:
+            self._anim("wave")
+        elif r < 0.55:
+            self._anim("bounce")
+            self._show_expr("excited")
+            self.root.after(900, lambda: self._show_expr("happy"))
+        elif r < 0.75:
+            self._show_expr("shy")
+            self.root.after(1200, lambda: self._show_expr("normal"))
+        elif r < 0.9:
+            self._show_expr("playful")
+            self.root.after(1000, lambda: self._show_expr("normal"))
+        else:
+            self._anim("heart_pulse")
+
+    # Release triggers click if no drag happened (hook after _release)
+    def _release(self, ev):
+        # Save pos
+        self.cfg.set("position", {"x": self.root.winfo_x(), "y": self.root.winfo_y()})
+        if not self._moved:
+            self._on_single_click_action()
+        elif not self._anim_lock:
+            self.root.after(80, lambda: self._show_expr("normal"))
+
+    # ---------- Idle engine ----------
+    def _start_idle_engine(self):
+        if not self.cfg.get("idle_anims", True):
+            return
+
+        def blink():
+            if not self._anim_lock and not self._hover and not self._expanded:
+                for i, e in enumerate(["blink", "blink", "normal"]):
+                    self.root.after(i * 90, lambda ee=e: self._show_expr(ee))
+            self.root.after(random.randint(4500, 8000), blink)
+
+        def mood_shifts():
+            if not self._anim_lock and not self._hover and not self._expanded:
+                moods = ["normal", "normal", "happy", "normal", "sleepy", "playful", "thinking", "normal"]
+                m = random.choice(moods)
+                self._show_expr(m)
+                if m == "sleepy":
+                    MeowSound.play_purr()
+            self.root.after(random.randint(15000, 30000), mood_shifts)
+
+        def breath():
+            if not self._anim_lock and not self._hover and not self._expanded \
+                    and self.cfg.get("breathing", True):
+                scale = 1.0 + 0.015 * math.sin(time.time() * 1.4)
+                try:
+                    self._show_expr(self._current_expr, scale=scale)
+                except Exception:
+                    pass
+            self.root.after(120, breath)
+
+        def tail_wag_chance():
+            if not self._anim_lock and not self._hover and not self._expanded \
+                    and random.random() < 0.5:
+                for i, t in enumerate([0, 4, -4, 5, -3, 2, 0]):
+                    self.root.after(i * 90, lambda tt=t: self._show_expr(
+                        self._current_expr, tilt=tt))
+            self.root.after(random.randint(9000, 17000), tail_wag_chance)
+
+        self.root.after(2200, blink)
+        self.root.after(11000, mood_shifts)
+        self.root.after(600, breath)
+        self.root.after(7000, tail_wag_chance)
+
+    # ---------- Menu ----------
+    def _build_menu(self):
+        self.menu = tk.Menu(self.root, tearoff=0,
+                            bg="#1a1a2e", fg="white",
                             activebackground="#00d4ff", activeforeground="#1a1a2e")
-        self.menu.add_command(label="💬 Chat / Ask", command=self._toggle_chat)
+        self.menu.add_command(label="💬 Open Chat", command=lambda: (MeowSound.play_cute_meow(), self._toggle_chat()))
         self.menu.add_command(label="✅ Add Task", command=self._quick_add_task)
-        self.menu.add_command(label="📋 Show Tasks", command=self._show_tasks_popup)
+        self.menu.add_command(label="📋 Show Tasks", command=self._show_tasks)
         self.menu.add_separator()
-        self.menu.add_command(label="🐱 Make Bigger", command=lambda: self._resize_cat(120))
-        self.menu.add_command(label="🐾 Make Smaller", command=lambda: self._resize_cat(70))
+        self.menu.add_command(label="🔊 Meow! 🎵", command=lambda: MeowSound.play_cute_meow())
+        self.menu.add_command(label="😻 Purr", command=lambda: MeowSound.play_purr())
+        self.menu.add_command(label="🐦 Chirp", command=lambda: MeowSound.play_happy_chirp())
         self.menu.add_separator()
-        self.menu.add_command(label="⚙️ Help / Commands", command=self._show_help)
+        sz = self.menu.add_cascade(label="📏 Resize Cat")
+        sm = tk.Menu(sz, tearoff=0, bg="#1a1a2e", fg="white",
+                     activebackground="#00d4ff", activeforeground="#1a1a2e")
+        for label, s in [("Tiny (70)", 70), ("Small (90)", 90), ("Normal (120)", 120),
+                         ("Large (160)", 160), ("Huge (200)", 200)]:
+            sm.add_command(label=label, command=lambda ss=s: self._resize(ss))
+        self.menu.entryconfigure(self.menu.index("end"), menu=sm)
+        self.menu.add_separator()
+        self.menu.add_command(label="👋 Wave", command=lambda: (MeowSound.play_purr(), self._anim("wave")))
+        self.menu.add_command(label="🎉 Bounce", command=lambda: (MeowSound.play_happy_chirp(), self._anim("bounce")))
+        self.menu.add_command(label="💕 Love", command=lambda: (MeowSound.play_purr(), self._anim("heart_pulse")))
+        self.menu.add_command(label="😤 Shake", command=lambda: self._anim("angry_shake"))
+        self.menu.add_separator()
+        self.menu.add_command(label="❓ Help", command=self._show_help)
         self.menu.add_separator()
         self.menu.add_command(label="❌ Exit Siya", command=self._quit)
-        self.cat_canvas.bind("<Button-3>", self._show_menu)
 
-    def _show_menu(self, event):
-        self._drag_moved = True
+    def _menu_popup(self, event):
+        self._moved = True  # prevent click-triggered meow after menu
         try:
             self.menu.tk_popup(event.x_root, event.y_root)
         finally:
             self.menu.grab_release()
 
-    def _on_drag_start(self, event):
-        self._drag_moved = False
-        self.drag_data["x"] = event.x_root - self.root.winfo_x()
-        self.drag_data["y"] = event.y_root - self.root.winfo_y()
-
-    def _on_drag_move(self, event):
-        self._drag_moved = True
-        x = event.x_root - self.drag_data["x"]
-        y = event.y_root - self.drag_data["y"]
-        gw = int(self.root.geometry().split('x')[0])
-        self.root.geometry(f"+{x}+{y}")
-
-    def _on_drag_end(self, event):
-        x = self.root.winfo_x()
-        y = self.root.winfo_y()
-        self.config.set("position", {"x": x, "y": y})
-
-    def _on_cat_click(self, event):
-        if not self._drag_moved:
-            self.cat.set_mood("wave")
-            self._toggle_chat()
-        self._drag_moved = False
-
-    def _resize_cat(self, new_size):
-        self.cat_w = new_size
-        self.cat_h = new_size
-        self.config.set("cat_size", new_size)
-        self.cat_canvas.config(width=new_size, height=new_size)
-        self.cat.width = new_size
-        self.cat.height = new_size
-        self.cat.load_image()
-        if not self.expanded:
-            self.root.geometry(f"{new_size}x{new_size}")
-        else:
-            self._update_expanded_geometry()
-
-    def _start_idle_animations(self):
-        if not self.config.get("auto_idle_animations", True):
-            return
-
-        def blink_loop():
-            if not self.cat.animation_active and not self.expanded:
-                self.cat._blink_state = True
-                self.cat.show_normal()
-                self.root.after(150, lambda: (setattr(self.cat, '_blink_state', False), self.cat.show_normal()))
-            self.root.after(random.randint(4000, 8000), blink_loop)
-
-        def idle_mood_loop():
-            if not self.cat.animation_active and not self.expanded:
-                moods = ["happy", "happy", "happy", None]
-                m = random.choice(moods)
-                if m:
-                    self.cat.set_mood(m)
-            self.root.after(random.randint(15000, 30000), idle_mood_loop)
-
-        self.root.after(3000, blink_loop)
-        self.root.after(10000, idle_mood_loop)
-
+    # ---------- Chat ----------
     def _toggle_chat(self):
-        if self.expanded:
+        if self._expanded:
             self._collapse_chat()
         else:
             self._expand_chat()
 
     def _expand_chat(self):
-        self.expanded = True
-        self.cat.set_mood("excited")
-        self._update_expanded_geometry()
-
+        self._expanded = True
         if self.chat_frame is None:
             self._build_chat_panel()
-
-        self.chat_frame.pack(fill=tk.BOTH, expand=True, padx=4, pady=(0, 4))
-        self.text_entry.focus_set()
-
-    def _update_expanded_geometry(self):
+        # Grow window to fit chat panel below cat
+        total_w = max(self.size, self.chat_w)
+        total_h = self.size + self.chat_h + 6
         x = self.root.winfo_x()
         y = self.root.winfo_y()
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
-        total_w = max(self.cat_w, self.chat_w)
-        total_h = self.cat_h + self.chat_h + 10
-        if x + total_w > sw:
-            x = sw - total_w - 10
-        if y + total_h > sh:
-            y = sh - total_h - 50
+        if x + total_w > sw: x = sw - total_w - 5
+        if y + total_h > sh: y = max(0, sh - total_h - 50)
         self.root.geometry(f"{total_w}x{total_h}+{x}+{y}")
+        self.chat_frame.place(x=0, y=self.size + 3, width=total_w, height=self.chat_h)
+        self._show_expr("excited")
+        self.root.after(1000, lambda: (self._show_expr("happy") if not self._anim_lock else None))
+        self.text_entry.focus_set()
 
     def _collapse_chat(self):
-        self.expanded = False
+        self._expanded = False
         if self.chat_frame:
-            self.chat_frame.pack_forget()
+            self.chat_frame.place_forget()
         x = self.root.winfo_x()
         y = self.root.winfo_y()
-        self.root.geometry(f"{self.cat_w}x{self.cat_h}+{x}+{y}")
-        self.cat.set_mood("happy")
+        self.root.geometry(f"{self.size}x{self.size}+{x}+{y}")
+        self._show_expr("normal")
 
     def _build_chat_panel(self):
-        self.chat_frame = tk.Frame(self.main_frame, bg="#1a1a2e", bd=2, relief=tk.RAISED)
-
-        # Header bar
-        header = tk.Frame(self.chat_frame, bg="#16213e", height=30)
-        header.pack(fill=tk.X)
-        header.pack_propagate(False)
-
+        self.chat_frame = tk.Frame(self.root, bg="#1a1a2e", bd=2, relief=tk.RAISED)
+        header = tk.Frame(self.chat_frame, bg="#16213e", height=28)
+        header.pack(fill=tk.X); header.pack_propagate(False)
         tk.Label(header, text="🐱 Siya Chat", font=("Arial", 9, "bold"),
                  bg="#16213e", fg="#00d4ff").pack(side=tk.LEFT, padx=8)
-
-        tk.Button(header, text="_", font=("Arial", 8, "bold"),
+        tk.Button(header, text="×", font=("Arial", 9, "bold"),
                   bg="#e94560", fg="white", relief=tk.FLAT, cursor="hand2",
                   command=self._collapse_chat, width=2).pack(side=tk.RIGHT, padx=4)
 
-        # Chat display
         self.chat_display = scrolledtext.ScrolledText(
             self.chat_frame, wrap=tk.WORD, font=("Consolas", 9),
             bg="#0f3460", fg="#e9ecef", insertbackground="#00d4ff",
-            relief=tk.FLAT, padx=6, pady=6, height=18
-        )
+            relief=tk.FLAT, padx=6, pady=6, height=16)
         self.chat_display.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
         self.chat_display.config(state=tk.DISABLED)
 
-        # Quick action buttons
-        quick = tk.Frame(self.chat_frame, bg="#1a1a2e")
-        quick.pack(fill=tk.X, padx=4, pady=(0, 2))
-
-        quick_btns = [
-            ("⏰ Time", lambda: self._send_text("what time is it")),
-            ("📅 Date", lambda: self._send_text("what is today's date")),
-            ("🧮 Calc", lambda: self._quick_calc()),
-            ("🌤️ Weather", lambda: self._send_text("weather")),
-            ("😂 Joke", lambda: self._send_text("tell me a joke")),
-            ("❓ Help", lambda: self._send_text("help")),
-        ]
-        for label, cmd in quick_btns:
-            tk.Button(quick, text=label, font=("Arial", 8, "bold"),
+        qrow = tk.Frame(self.chat_frame, bg="#1a1a2e")
+        qrow.pack(fill=tk.X, padx=4, pady=(0, 2))
+        qb = [("⏰", "what time is it"), ("📅", "what's today's date"),
+              ("🧮", None), ("🌤️", "weather"), ("😂", "tell me a joke"), ("❓", "help")]
+        for label, cmd in qb:
+            if cmd is None:
+                fn = self._quick_calc
+            else:
+                fn = lambda c=cmd: self._send_text(c)
+            tk.Button(qrow, text=label, font=("Arial", 10, "bold"),
                       bg="#16213e", fg="#00d4ff", relief=tk.FLAT, cursor="hand2",
-                      command=cmd, padx=4).pack(side=tk.LEFT, padx=1, pady=1)
+                      command=fn, width=3, padx=2).pack(side=tk.LEFT, padx=2, pady=1)
 
-        # Input row
-        input_row = tk.Frame(self.chat_frame, bg="#1a1a2e")
-        input_row.pack(fill=tk.X, padx=4, pady=4)
-
-        self.text_entry = tk.Entry(
-            input_row, font=("Arial", 10), bg="#0f3460", fg="white",
-            insertbackground="#00d4ff", relief=tk.FLAT
-        )
+        ir = tk.Frame(self.chat_frame, bg="#1a1a2e")
+        ir.pack(fill=tk.X, padx=4, pady=4)
+        self.text_entry = tk.Entry(ir, font=("Arial", 10), bg="#0f3460", fg="white",
+                                   insertbackground="#00d4ff", relief=tk.FLAT)
         self.text_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 4), ipady=4)
-        self.text_entry.bind('<Return>', lambda e: self._on_send())
-        self.text_entry.bind('<Shift-Return>', lambda e: None)
-
-        tk.Button(input_row, text="Send", font=("Arial", 9, "bold"),
+        self.text_entry.bind('<Return>', lambda e: self._send())
+        tk.Button(ir, text="Send", font=("Arial", 9, "bold"),
                   bg="#00d4ff", fg="#1a1a2e", relief=tk.FLAT, cursor="hand2",
-                  command=self._on_send, padx=10).pack(side=tk.RIGHT, ipady=2)
+                  command=self._send, padx=10).pack(side=tk.RIGHT, ipady=2)
 
-        # Welcome
-        self._add_msg("Siya", "Meow! 🐱 I'm your floating cat assistant! Click me or right-click for menu. Try: 'what can you do'")
+        self._add("Siya", "Meow! 🐱 Try: help, tell me a joke, what time is it, open notepad, weather, etc.")
 
     def _quick_calc(self):
-        expr = simpledialog.askstring("Calculator", "Enter math expression (e.g. 12 * 17):", parent=self.root)
-        if expr:
-            self._send_text(f"calculate {expr}")
+        e = simpledialog.askstring("Calculator", "Expression (e.g. 12 * 17):", parent=self.root)
+        if e: self._send_text(f"calculate {e}")
 
     def _quick_add_task(self):
-        desc = simpledialog.askstring("Add Task", "Task description:", parent=self.root)
-        if desc:
-            t = self.task_mgr.add_task(desc)
-            self.cat.set_mood("excited")
-            messagebox.showinfo("Task Added", f"✅ Task #{t['id']} added:\n{desc}")
-            self.root.after(2000, lambda: self.cat.set_mood("happy"))
+        d = simpledialog.askstring("Add Task", "Description:", parent=self.root)
+        if d:
+            t = self.tasks.add(d)
+            self._anim("bounce")
+            messagebox.showinfo("Task Added", f"✅ Task #{t['id']}:\n{d}")
 
-    def _show_tasks_popup(self):
-        pending = self.task_mgr.get_pending()
+    def _show_tasks(self):
+        pending = self.tasks.pending()
         top = tk.Toplevel(self.root)
         top.title("📋 Pending Tasks")
-        top.geometry("350x400")
-        top.configure(bg="#1a1a2e")
-        top.attributes('-topmost', True)
+        top.geometry("350x400"); top.configure(bg="#1a1a2e"); top.attributes('-topmost', True)
         tk.Label(top, text=f"📋 Tasks ({len(pending)} pending)",
                  font=("Arial", 12, "bold"), bg="#1a1a2e", fg="#00d4ff").pack(pady=8)
-        frame = tk.Frame(top, bg="#1a1a2e")
-        frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        f = tk.Frame(top, bg="#1a1a2e"); f.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         if not pending:
-            tk.Label(frame, text="🎉 All caught up! No pending tasks!",
-                     font=("Arial", 10), bg="#1a1a2e", fg="#00ff88").pack(pady=20)
+            tk.Label(f, text="🎉 All caught up!", font=("Arial", 10),
+                     bg="#1a1a2e", fg="#00ff88").pack(pady=20)
         else:
-            for task in pending:
-                row = tk.Frame(frame, bg="#0f3460", relief=tk.RAISED, bd=1)
+            for t in pending:
+                row = tk.Frame(f, bg="#0f3460", relief=tk.RAISED, bd=1)
                 row.pack(fill=tk.X, pady=2)
-                tk.Label(row, text=f"#{task['id']} {task['description']}",
+                tk.Label(row, text=f"#{t['id']} {t['description']}",
                          font=("Arial", 9), bg="#0f3460", fg="white", anchor="w",
                          wraplength=250).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=6, pady=6)
-                def done(tid=task["id"]):
-                    self.task_mgr.complete_task(tid)
-                    top.destroy()
-                    self.cat.set_mood("loving")
-                    self.root.after(2000, lambda: self.cat.set_mood("happy"))
-                    self._show_tasks_popup()
+                def _done(tid=t["id"]):
+                    self.tasks.complete(tid); top.destroy()
+                    self._anim("heart_pulse")
+                    MeowSound.play_happy_chirp()
+                    self.root.after(150, self._show_tasks)
                 tk.Button(row, text="✓", font=("Arial", 9, "bold"),
                           bg="#00ff88", fg="#1a1a2e", relief=tk.FLAT,
-                          cursor="hand2", width=3, command=done).pack(side=tk.RIGHT, padx=4, pady=3)
+                          cursor="hand2", width=3, command=_done).pack(side=tk.RIGHT, padx=4, pady=3)
 
     def _show_help(self):
-        help_text = (
-            "🐱 SIYA - Floating Cat Commands 🐱\n"
-            "=" * 35 + "\n\n"
+        top = tk.Toplevel(self.root); top.title("❓ Siya Help"); top.geometry("420x550")
+        top.configure(bg="#1a1a2e"); top.attributes('-topmost', True)
+        tk.Label(top, text="🐱 Siya Command Reference",
+                 font=("Arial", 14, "bold"), bg="#1a1a2e", fg="#00d4ff").pack(pady=10)
+        t = scrolledtext.ScrolledText(top, font=("Consolas", 9),
+                                      bg="#0f3460", fg="white", wrap=tk.WORD, padx=10, pady=10)
+        t.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        t.insert(tk.END, (
+            "🐱 INTERACTION\n"
+            "  • SINGLE CLICK = meow + animation\n"
+            "  • DOUBLE CLICK = open chat\n"
+            "  • DRAG = move me anywhere\n"
+            "  • RIGHT-CLICK = menu (resize / sounds / anims)\n"
+            "  • MOUSE WHEEL = resize me!\n"
+            "  • HOVER = zoom + purr\n\n"
             "⏰ TIME & DATE\n"
-            "  • what time is it\n"
-            "  • what's today's date\n\n"
+            "  • what time is it · today's date\n\n"
             "🧮 MATH\n"
-            "  • what is 25 * 17\n"
-            "  • calculate 15% of 200\n\n"
+            "  • what is 25 * 17 · calculate 15% of 200\n\n"
             "🖥️ OPEN APPS (Windows)\n"
-            "  • open notepad / calculator / paint\n"
-            "  • open chrome / edge / firefox\n"
-            "  • open explorer / cmd / settings\n\n"
+            "  • open notepad · open calculator · open paint\n"
+            "  • open chrome · open cmd · open settings\n\n"
             "🔍 WEB\n"
             "  • search for python tutorials\n"
-            "  • open youtube.com\n"
-            "  • go to github.com\n\n"
-            "🌤️ WEATHER\n"
-            "  • weather\n"
-            "  • weather in tokyo\n\n"
+            "  • open youtube.com · go to github.com\n\n"
+            "🌤️ WEATHER (free / no key)\n"
+            "  • weather · weather in tokyo\n\n"
             "📁 FILES\n"
             "  • list files\n"
             "  • create file notes.txt\n"
             "  • new folder projects\n\n"
             "🎲 FUN\n"
-            "  • tell me a joke\n"
-            "  • flip a coin / roll dice\n"
+            "  • tell me a joke · flip a coin · roll dice\n"
             "  • give me a quote\n\n"
             "✅ TASKS\n"
-            "  • add task [description]\n"
-            "  • show tasks\n\n"
-            "💡 Right-click cat for MENU!\n"
-            "💡 Drag cat anywhere!\n"
-            "💡 Click cat to open chat!"
-        )
-        top = tk.Toplevel(self.root)
-        top.title("❓ Siya Help")
-        top.geometry("420x550")
-        top.configure(bg="#1a1a2e")
-        top.attributes('-topmost', True)
-        tk.Label(top, text="🐱 Siya Command Reference",
-                 font=("Arial", 14, "bold"), bg="#1a1a2e", fg="#00d4ff").pack(pady=10)
-        txt = scrolledtext.ScrolledText(top, font=("Consolas", 9),
-                                        bg="#0f3460", fg="white", wrap=tk.WORD, padx=10, pady=10)
-        txt.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-        txt.insert(tk.END, help_text)
-        txt.config(state=tk.DISABLED)
+            "  • add task buy groceries\n"
+            "  • show tasks · complete task 3\n"
+        ))
+        t.config(state=tk.DISABLED)
 
+    # Send / receive
     def _send_text(self, text):
-        if not self.expanded:
+        if not self._expanded:
             self._expand_chat()
-            self.root.after(100, lambda: self._send_text(text))
+            self.root.after(120, lambda: self._send_text(text))
             return
+        self.text_entry.delete(0, tk.END); self.text_entry.insert(0, text); self._send()
+
+    def _send(self):
+        user = self.text_entry.get().strip()
+        if not user: return
         self.text_entry.delete(0, tk.END)
-        self.text_entry.insert(0, text)
-        self._on_send()
+        threading.Thread(target=self._process, args=(user,), daemon=True).start()
 
-    def _on_send(self):
-        user_text = self.text_entry.get().strip()
-        if not user_text:
-            return
-        self.text_entry.delete(0, tk.END)
-        threading.Thread(target=self._process, args=(user_text,), daemon=True).start()
-
-    def _process(self, user_text):
-        self._add_msg("You", user_text)
-        self.cat.set_mood("thinking")
-
-        # Task commands
-        user_lower = user_text.lower()
-        if any(k in user_lower for k in ["add task", "create task", "new task", "remind me"]):
+    def _process(self, user):
+        self._add("You", user)
+        self._show_expr("thinking")
+        t = user.lower()
+        # Task verbs
+        if any(k in t for k in ["add task", "create task", "new task", "remind me to", "remind me"]):
+            desc = t
             for w in ["add task", "create task", "new task", "remind me to", "remind me"]:
-                user_lower = user_lower.replace(w, "")
-            desc = user_lower.strip()
+                desc = desc.replace(w, "")
+            desc = desc.strip(" :,.-")
             if desc:
-                self.task_mgr.add_task(desc)
-                self.root.after(0, lambda: self._add_msg("Siya", f"✅ Task added: '{desc}'"))
-                self.cat.set_mood("excited")
+                self.tasks.add(desc)
+                self.root.after(0, lambda: self._add("Siya", f"✅ Added: '{desc}'"))
+                self._anim("bounce"); MeowSound.play_happy_chirp()
             else:
-                self.root.after(0, lambda: self._add_msg("Siya", "📝 What task would you like to add?"))
-            self.root.after(3000, lambda: self.cat.set_mood("happy"))
+                self.root.after(0, lambda: self._add("Siya", "📝 What task?"))
+            self.root.after(2500, lambda: self._show_expr("normal"))
             return
-
-        if "show task" in user_lower or "my task" in user_lower or "pending task" in user_lower:
-            pending = self.task_mgr.get_pending()
-            if pending:
-                msg = "📋 Pending Tasks:\n" + "\n".join(f"  #{t['id']}. {t['description']}" for t in pending)
-            else:
-                msg = "🎉 No pending tasks! All caught up!"
-            self.root.after(0, lambda: self._add_msg("Siya", msg))
-            self.cat.set_mood("happy")
+        if "show task" in t or "my task" in t or "pending task" in t:
+            p = self.tasks.pending()
+            msg = "📋 Pending:\n" + "\n".join(f"  #{x['id']}. {x['description']}" for x in p) if p else "🎉 All caught up!"
+            self.root.after(0, lambda: self._add("Siya", msg)); self._show_expr("happy")
             return
-
-        if "complete task" in user_lower or "done task" in user_lower or "finish task" in user_lower:
+        if "complete task" in t or "done task" in t or "finish task" in t:
             import re
-            num_match = re.search(r'\d+', user_lower)
-            if num_match:
-                tid = int(num_match.group())
-                if self.task_mgr.complete_task(tid):
-                    self.root.after(0, lambda: self._add_msg("Siya", f"🎉 Task #{tid} completed! Great job!"))
-                    self.cat.set_mood("loving")
-                else:
-                    self.root.after(0, lambda: self._add_msg("Siya", f"😿 Task #{tid} not found."))
-                    self.cat.set_mood("error")
+            m = re.search(r'\d+', t)
+            if m and self.tasks.complete(int(m.group())):
+                self.root.after(0, lambda: self._add("Siya", f"🎉 Task #{m.group()} done! 🎊"))
+                self._anim("heart_pulse"); MeowSound.play_happy_chirp()
             else:
-                self.root.after(0, lambda: self._add_msg("Siya", "Which task? Say: 'complete task 3'"))
-            self.root.after(3000, lambda: self.cat.set_mood("happy"))
+                self.root.after(0, lambda: self._add("Siya", "🤔 Which? Try: 'complete task 3'"))
+                self._show_expr("surprised")
+            self.root.after(2500, lambda: self._show_expr("normal"))
             return
-
-        # Execute tasks
-        results = self.executor.execute(user_text)
-        types_seen = set()
+        # Execute
+        results = Executor.run(user)
+        seen = set()
         parts = []
-        for rtype, rmsg in results:
-            if rtype not in types_seen or rtype == "chat":
-                parts.append(rmsg)
-                types_seen.add(rtype)
-        final = "\n\n".join(parts) if parts else "Meow! 😺"
+        moods = {"error": "crying", "app": "excited", "web": "excited", "fun": "happy",
+                 "quote": "loving", "math": "playful", "weather": "happy",
+                 "files": "happy", "chat": "happy"}
+        chosen = "speaking"
+        for kind, msg in results:
+            if kind not in seen or kind == "chat":
+                parts.append(msg); seen.add(kind)
+            if kind in moods: chosen = moods[kind]
+        final = "\n\n".join(parts)
+        if chosen == "excited":
+            self._anim("bounce"); MeowSound.play_happy_chirp()
+        elif chosen == "crying":
+            self._anim("error")
+        elif chosen == "loving":
+            self._anim("heart_pulse"); MeowSound.play_purr()
+        else:
+            if "happy" in chosen: MeowSound.play_purr()
+            self._show_expr("happy")
+        self.root.after(0, lambda: self._add("Siya", final))
+        self.root.after(3500, lambda: self._show_expr("normal"))
 
-        # Set mood based on result types
-        mood_map = {"error": "error", "excited": "excited", "loving": "loving",
-                    "fun": "excited", "quote": "loving", "math": "speaking",
-                    "weather": "speaking", "app": "excited"}
-        picked_mood = "speaking"
-        for rt, _ in results:
-            if rt in mood_map:
-                picked_mood = mood_map[rt]
-                break
-
-        self.cat.set_mood(picked_mood)
-        self.root.after(0, lambda: self._add_msg("Siya", final))
-        self.root.after(3500, lambda: self.cat.set_mood("happy"))
-
-    def _add_msg(self, sender, message):
+    def _add(self, sender, msg):
         if not hasattr(self, 'chat_display'):
             return
         self.chat_display.config(state=tk.NORMAL)
         ts = datetime.now().strftime("%H:%M")
         if sender == "You":
             self.chat_display.insert(tk.END, f"\n[{ts}] 👤 You:\n", "u")
-            self.chat_display.insert(tk.END, f"{message}\n", "um")
+            self.chat_display.insert(tk.END, f"{msg}\n", "um")
         else:
             self.chat_display.insert(tk.END, f"\n[{ts}] 🐱 Siya:\n", "s")
-            self.chat_display.insert(tk.END, f"{message}\n", "sm")
+            self.chat_display.insert(tk.END, f"{msg}\n", "sm")
         self.chat_display.tag_config("u", foreground="#00d4ff", font=("Arial", 9, "bold"))
         self.chat_display.tag_config("um", foreground="#ffffff")
         self.chat_display.tag_config("s", foreground="#00ff88", font=("Arial", 9, "bold"))
@@ -1066,14 +1051,31 @@ class FloatingCatUI:
         self.chat_display.see(tk.END)
         self.chat_display.config(state=tk.DISABLED)
 
+    # ---------- Quit ----------
     def _quit(self):
-        if messagebox.askyesno("Exit Siya", "Are you sure you want to exit? 🐱"):
+        if messagebox.askyesno("Exit Siya", "Exit? 🐱"):
             self.root.destroy()
 
 
+# =============================================================
+# Entry
+# =============================================================
+def _ensure_sprites():
+    """Run generator if sprites folder is empty/missing"""
+    any_png = bool(list(SPRITES_DIR.glob("cat_*.png"))) if SPRITES_DIR.exists() else False
+    if not any_png and not COMPAT_IMAGE.exists():
+        try:
+            from generate_pro_cat import generate_all
+            generate_all(SPRITES_DIR)
+        except Exception as e:
+            # Silent fallback — the app generates in-memory sprites anyway
+            sys.stderr.write(f"[siya] note: sprite pre-generation skipped ({e})\n")
+
+
 def main():
+    _ensure_sprites()
     root = tk.Tk()
-    app = FloatingCatUI(root)
+    app = ProCatApp(root)
     root.mainloop()
 
 
