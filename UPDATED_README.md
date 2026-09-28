@@ -1,9 +1,6 @@
 # 🎉 SIYA HAS BEEN UPDATED!
-
 ## ✅ What Changed (Important!)
-
 ### 🔑 **API Keys Are Now User-Defined!**
-
 **Before:**
 - API keys hardcoded in files
 - Had to edit .env file
@@ -62,7 +59,6 @@ python siya_free.py
 # Choose "Ollama" option
 # Start chatting!
 ```
-
 ### **Option 2: OpenAI Versions**
 
 ```bash
@@ -79,9 +75,7 @@ python siya_advanced.py
 
 # 4. Start chatting!
 ```
-
 ---
-
 ## 🔑 API Key Management
 
 ### For FREE Version (siya_free.py)
@@ -107,7 +101,6 @@ python siya_advanced.py
   "ollama_model": "llama2"
 }
 ```
-
 ### For OpenAI Versions (siya.py, siya_advanced.py)
 
 **First Run:**
@@ -127,7 +120,6 @@ python siya_advanced.py
   "openai_api_key": "sk-..."
 }
 ```
-
 ---
 
 ## 📁 Configuration Files
@@ -158,7 +150,6 @@ python siya_advanced.py
 OPENAI_API_KEY = "sk-abc123..."
 GROQ_API_KEY = "gsk-xyz789..."
 ```
-
 ### After:
 ```python
 # No API keys in code!

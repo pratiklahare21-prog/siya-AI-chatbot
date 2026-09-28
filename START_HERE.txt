@@ -31,6 +31,7 @@
   • Hear Siya respond with voice!
 
 
+
 🎯 WHAT CAN SIYA DO?
 ═══════════════════════════════════════════════════════════
 
@@ -64,6 +65,7 @@
      • Math solutions
 
 
+
 📁 IMPORTANT FILES
 ═══════════════════════════════════════════════════════════
 
@@ -88,6 +90,7 @@
 
 🎨 INTERFACE PREVIEW
 ═══════════════════════════════════════════════════════════
+
 
   When you launch Siya, you'll see:
 
@@ -118,7 +121,6 @@
   3. Try the Tasks tab for productivity
   4. Clear chat between different topics
   5. Experiment with different questions!
-
 
 ❓ TROUBLESHOOTING
 ═══════════════════════════════════════════════════════════
@@ -185,7 +187,6 @@
   ├── 🔒 .env ................... API key (SECRET!)
   ├── 📋 siya_tasks.json ........ Your tasks (auto-created)
   └── 📁 venv/ .................. Python environment
-
 
 💰 COST INFO
 ═══════════════════════════════════════════════════════════

@@ -19,6 +19,8 @@ CONFIG_FILE = Path("siya_openai_config.json")
 client = None
 
 
+
+
 class ConfigManager:
     """Manages OpenAI configuration"""
     def __init__(self):
@@ -41,6 +43,8 @@ class ConfigManager:
     def set_api_key(self, key):
         self.config["openai_api_key"] = key
         self.save_config()
+
+
 
 
 class SiyaCatUI:
@@ -86,6 +90,7 @@ class SiyaCatUI:
                 self.root.destroy()
                 return
         
+
         # Initialize text-to-speech
         try:
             self.tts_engine = pyttsx3.init()
@@ -129,6 +134,8 @@ class SiyaCatUI:
         info_frame = tk.Frame(dialog, bg="#16213e", relief=tk.RAISED, bd=2)
         info_frame.pack(fill=tk.X, padx=20, pady=10)
         
+
+
         tk.Label(
             info_frame,
             text="⚠️ This version requires an OpenAI API key\n\n"
@@ -153,6 +160,8 @@ class SiyaCatUI:
             fg="#ffffff"
         ).pack(pady=(10, 5))
         
+
+
         api_key_var = tk.StringVar()
         api_key_entry = tk.Entry(
             dialog,
@@ -197,6 +206,8 @@ class SiyaCatUI:
             command=save_key,
             width=15
         ).pack(side=tk.LEFT, padx=5)
+        
+
         
         tk.Button(
             button_frame,
