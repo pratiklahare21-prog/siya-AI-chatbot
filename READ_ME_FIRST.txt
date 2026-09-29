@@ -5,6 +5,7 @@
 ╚════════════════════════════════════════════════════════════════╝
 
 🚨 WHAT WAS THE PROBLEM?
+
 ════════════════════════════════════════════════════════════════
 
 You got this error:
@@ -43,7 +44,6 @@ Steps:
 8. Done! Start chatting!
 
 Time needed: 15 minutes (first time only)
-
 
 ┌──────────────────────────────────────────────────────────────┐
 │  OPTION 2: GROQ API (Quick Option!)                         │
@@ -162,7 +162,6 @@ NEW (Free):
 
 
 📚 DETAILED GUIDES
-
 ════════════════════════════════════════════════════════════════
 
 Want more info? Read these:
@@ -184,7 +183,6 @@ EMOJI_CAT_GUIDE.md
 
 
 🐛 COMMON ISSUES
-
 ════════════════════════════════════════════════════════════════
 
 Issue: "Couldn't connect to my brain"
@@ -208,7 +206,6 @@ Fix: Run install.bat
 3. Add tasks with: "add task [description]"
 4. Clear chat between topics for better context
 5. The emoji cat reacts to everything you do!
-
 
 🎉 YOU'RE READY!
 ════════════════════════════════════════════════════════════════
