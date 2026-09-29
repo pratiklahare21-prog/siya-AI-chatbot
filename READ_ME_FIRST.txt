@@ -111,7 +111,6 @@ Your cat now shows emotions!
 
 The emoji is HUGE on screen (120pt font)!
 
-
 📁 WHICH FILES TO USE?
 ════════════════════════════════════════════════════════════════
 
@@ -131,6 +130,7 @@ Run Files:
 
 
 💰 COST COMPARISON
+
 ════════════════════════════════════════════════════════════════
 
 OLD (OpenAI):
@@ -145,6 +145,7 @@ NEW (Free):
 
 
 🎯 RECOMMENDED PATH
+
 ════════════════════════════════════════════════════════════════
 
 1. Install Ollama (best option)
@@ -161,6 +162,7 @@ NEW (Free):
 
 
 📚 DETAILED GUIDES
+
 ════════════════════════════════════════════════════════════════
 
 Want more info? Read these:
@@ -182,6 +184,7 @@ EMOJI_CAT_GUIDE.md
 
 
 🐛 COMMON ISSUES
+
 ════════════════════════════════════════════════════════════════
 
 Issue: "Couldn't connect to my brain"

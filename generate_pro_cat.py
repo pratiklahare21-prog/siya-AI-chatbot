@@ -9,12 +9,10 @@ Creates 15+ transparent-calico cat expressions exactly matching the reference im
   - Proper shading matching reference lighting (top-left light)
 All output PNGs have alpha channel (true transparency - NO BACKGROUND BOX).
 """
-
 from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 from pathlib import Path
 import math
 import random
-
 
 FUR_WHITE = (250, 248, 244)
 FUR_WHITE_SHADOW = (225, 220, 212)
@@ -34,7 +32,6 @@ MOUTH_LINE = (92, 58, 46)
 WHISKER = (255, 255, 255)
 GROUND_SHADOW = (40, 40, 46)
 PAW_PAD = (245, 195, 205)
-
 
 def _soft_blur(alpha_img, radius=2):
     return alpha_img.filter(ImageFilter.GaussianBlur(radius=radius))

@@ -1,11 +1,8 @@
 # 🆓 FREE Siya Setup Guide
 
 ## 🎉 No More API Costs!
-
 Your new version uses **100% FREE AI** with two options:
-
 ---
-
 ## Option 1: Ollama (Recommended - Completely Free!)
 
 ### ✅ Pros:
@@ -40,9 +37,7 @@ Your new version uses **100% FREE AI** with two options:
    ```
 
 ### 🎯 That's it! No API keys needed!
-
 ---
-
 ## Option 2: Groq API (Free Online)
 
 ### ✅ Pros:
@@ -70,7 +65,6 @@ Your new version uses **100% FREE AI** with two options:
    ```bash
    python siya_free.py
    ```
-
 ---
 
 ## 🎨 New Emoji Cat Features
@@ -110,7 +104,6 @@ The cat now shows as a **HUGE emoji** (120pt font) instead of ASCII art!
 - **Groq** if you want quick setup
 
 ---
-
 ## 🚀 Quick Start
 
 ### For Ollama:
@@ -130,7 +123,6 @@ python siya_free.py
 
 python siya_free.py
 ```
-
 ---
 
 ## 📦 Requirements

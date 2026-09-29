@@ -34,12 +34,14 @@ siya_openai_config.json
 # Task Data
 siya_tasks.json
 
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
 
 # OS
 .DS_Store
@@ -50,6 +52,7 @@ Thumbs.db
 *.tmp
 *.bak
 *.wav
+
 
 # Keep example files
 !.env.example
