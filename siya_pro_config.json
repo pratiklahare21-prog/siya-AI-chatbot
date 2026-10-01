@@ -1,0 +1,14 @@
+{
+  "cat_size": 120,
+  "position": {
+    "x": 1418,
+    "y": 414
+  },
+  "opacity": 1.0,
+  "sound_on": true,
+  "idle_anims": true,
+  "show_chat_on_double_click": true,
+  "hover_zoom": true,
+  "breathing": true,
+  "meow_volume": 70
+}
